@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project Explorer</title>
+
+  <!-- стилі -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <!--  Верхня панель -->
+  <header class="toolbar">
+    <button id="openFolderBtn" title="Вибрати теку">📁 Відкрити теку</button>
+    <button id="refreshBtn" title="Оновити список">🔄</button>
+  </header>
+
+  <!--  Шлях до поточної теки -->
+  <section id="currentPath" class="path"></section>
+
+  <!--  Дерево файлів -->
+  <section id="fileTree" class="tree" role="tree" aria-label="Project files"></section>
+
+  <!--  Статус-бар -->
+  <footer class="status" id="statusBar">Готово</footer>
+
+  <!-- логіка -->
+  <script type="module" src="main.js"></script>
+</body>
+</html>

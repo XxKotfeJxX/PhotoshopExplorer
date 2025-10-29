@@ -1,0 +1,419 @@
+// ===================================================
+// 🔹 Photoshop Project Explorer — з іконками, статусами і Smart Objects
+// ===================================================
+
+// Імпорт системних API
+const uxp = require("uxp");
+const localFileSystem = uxp.storage.localFileSystem;
+const entrypoints = uxp.entrypoints;
+
+// Елементи інтерфейсу
+const openFolderBtn = document.getElementById("openFolderBtn");
+const refreshBtn = document.getElementById("refreshBtn");
+const fileTree = document.getElementById("fileTree");
+const currentPath = document.getElementById("currentPath");
+const statusBar = document.getElementById("statusBar");
+
+let currentFolder = null;
+
+// 🔸 Підтримувані розширення Photoshop
+const SUPPORTED_EXTENSIONS = [
+  "psd", "psb", "png", "jpg", "jpeg", "tif", "tiff",
+  "gif", "bmp", "tga", "svg", "pdf", "heic", "webp"
+];
+
+// ===================================================
+// 🔹 Іконки для типів файлів (локальні з fallback)
+// ===================================================
+
+/**
+ *  /icons :
+ * Якщо якихось немає — підставляться емодзі.
+ */
+const ICONS = {
+  folder: "icons/folder.png",
+  folderOpen: "icons/folder-open.png",
+  psd: "icons/file-psd.png",
+  psb: "icons/file-psb.png",
+  image: "icons/file-image.png",
+  pdf: "icons/file-pdf.png",
+  generic: "icons/file-generic.png",
+  smart: "icons/smart.png",
+};
+
+// Перевірка наявності шляху (UXP не дає sync перевірку існування файлу в пакеті легко,
+// тому робимо простий fallback у рантаймі: якщо картинка не завантажилась — замінюємо на емодзі)
+function createIconImg(src, fallbackEmoji) {
+  const img = document.createElement("img");
+  img.src = src;
+  img.alt = "";
+  img.width = 16;
+  img.height = 16;
+  img.style.display = "inline-block";
+  img.style.width = "16px";
+  img.style.height = "16px";
+  img.style.objectFit = "contain";
+  img.onerror = () => {
+    // Якщо нема такого файлу — замінюємо на емодзі
+    img.replaceWith(document.createTextNode(fallbackEmoji));
+  };
+  return img;
+}
+
+function getFileIconForEntry(entry) {
+  if (entry.isFolder) {
+    return createIconImg(ICONS.folder, "📁");
+  }
+  const ext = (entry.name.split(".").pop() || "").toLowerCase();
+  if (ext === "psd") return createIconImg(ICONS.psd, "🅿️");
+  if (ext === "psb") return createIconImg(ICONS.psb, "🅿️");
+  if (["png","jpg","jpeg","gif","bmp","tif","tiff","tga","svg","heic","webp"].includes(ext)) {
+    return createIconImg(ICONS.image, "🖼️");
+  }
+  if (ext === "pdf") return createIconImg(ICONS.pdf, "📄");
+  return createIconImg(ICONS.generic, "📄");
+}
+
+// ===================================================
+// 🔹 Менеджер статус-повідомлень з автоприбиранням
+// ===================================================
+let statusTimer = null;
+/**
+ * setStatus("Текст", "info"|"success"|"warn"|"error", { persist?: boolean, ttl?: number })
+ */
+function setStatus(message, type = "info", options = {}) {
+  const { persist = false, ttl = 2000 } = options;
+  // стилізація легка через префікс-емодзі
+  const prefix = {
+    info: "ℹ️",
+    success: "✅",
+    warn: "⚠️",
+    error: "❌",
+  }[type] || "ℹ️";
+
+  statusBar.textContent = `${prefix} ${message}`;
+
+  if (statusTimer) {
+    clearTimeout(statusTimer);
+    statusTimer = null;
+  }
+  if (!persist) {
+    statusTimer = setTimeout(() => {
+      // прибираємо текст; можна показувати "Готово" як дефолт
+      statusBar.textContent = "Готово";
+      statusTimer = null;
+    }, ttl);
+  }
+}
+
+// ===================================================
+// 🔹 Вибір теки
+// ===================================================
+openFolderBtn.addEventListener("click", async () => {
+  try {
+    currentFolder = await localFileSystem.getFolder({ allowSystem: true });
+    if (!currentFolder) {
+      setStatus("Теку не вибрано", "warn");
+      return;
+    }
+
+    currentPath.textContent = currentFolder.nativePath || "(невідомо)";
+    await renderTree(currentFolder, fileTree);
+    setStatus("Список оновлено", "success");
+  } catch (err) {
+    console.error("Помилка при виборі теки:", err);
+    setStatus("Помилка при виборі теки", "error", { persist: true });
+  }
+});
+
+// ===================================================
+// 🔹 Оновлення дерева
+// ===================================================
+refreshBtn.addEventListener("click", () => {
+  if (currentFolder) renderTree(currentFolder, fileTree);
+});
+
+// ===================================================
+// 🔹 Рекурсивне побудування дерева
+// ===================================================
+async function renderTree(folder, container) {
+  container.innerHTML = "";
+  setStatus("Завантаження...");
+
+  try {
+    const entries = await folder.getEntries();
+    if (!entries.length) {
+      setStatus("Порожня тека", "info", { ttl: 1200 });
+      return;
+    }
+
+    for (const entry of entries) {
+      const item = document.createElement("div");
+      item.className = "tree-item";
+
+      const iconNode = getFileIconForEntry(entry);
+      const name = document.createElement("span");
+      name.textContent = entry.name;
+
+      item.append(iconNode, name);
+      container.appendChild(item);
+
+      // ===================================================
+      // 🔹 Якщо це тека
+      // ===================================================
+      if (entry.isFolder) {
+        const childrenContainer = document.createElement("div");
+        childrenContainer.className = "tree-children";
+        childrenContainer.style.display = "none";
+        container.appendChild(childrenContainer);
+
+        let expanded = false;
+        item.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          expanded = !expanded;
+          if (expanded) {
+            // змінюємо іконку папки (спробуємо замінити, якщо це <img> або емодзі)
+            if (iconNode.tagName === "IMG") iconNode.src = ICONS.folderOpen;
+            else iconNode.textContent = "📂";
+
+            if (!childrenContainer.dataset.loaded) {
+              await renderTree(entry, childrenContainer);
+              childrenContainer.dataset.loaded = "1";
+            }
+            childrenContainer.style.display = "block";
+          } else {
+            if (iconNode.tagName === "IMG") iconNode.src = ICONS.folder;
+            else iconNode.textContent = "📁";
+            childrenContainer.style.display = "none";
+          }
+        });
+      }
+
+      // ===================================================
+      // 🔹 Якщо це файл
+      // ===================================================
+      else {
+        const ext = entry.name.split(".").pop().toLowerCase();
+
+        // 🔸 Одинарний клік → показати Smart Object-и (PSD/PSB)
+        item.addEventListener("click", async (e) => {
+          e.stopPropagation();
+
+          if (["psd", "psb"].includes(ext)) {
+            // захист від повторного запуску аналізу
+            if (item.dataset.loading === "1") return;
+
+            // знайдемо/створимо контейнер під деревце смартів
+            let childrenContainer =
+              item.nextSibling && item.nextSibling.classList.contains("tree-children")
+                ? item.nextSibling
+                : null;
+
+            if (!childrenContainer) {
+              childrenContainer = document.createElement("div");
+              childrenContainer.className = "tree-children";
+              container.insertBefore(childrenContainer, item.nextSibling);
+            }
+
+            // toggle логіка
+            const isHidden = childrenContainer.style.display === "none" || !childrenContainer.style.display;
+            childrenContainer.style.display = isHidden ? "block" : "none";
+            if (!isHidden) return; // вже було завантажено і зараз просто ховаємо/показуємо
+
+            // Якщо ще не зчитували — запускаємо аналіз
+            if (!childrenContainer.dataset.loaded) {
+              item.dataset.loading = "1";
+              setStatus(`Аналіз ${entry.name}...`, "info", { persist: true });
+
+              try {
+                const smartTree = await analyzeSmartObjectsFromFile(entry);
+                childrenContainer.innerHTML = ""; // на випадок, якщо там щось було
+                renderSmartTree(smartTree, childrenContainer);
+
+                childrenContainer.dataset.loaded = "1";
+                setStatus(`Зчитано смарт-об'єкти: ${smartTree.length}`, "success", { ttl: 1600 });
+              } catch (err) {
+                console.error("Аналіз помилковий:", err);
+                setStatus("Помилка аналізу файлу", "error", { persist: true });
+              } finally {
+                item.dataset.loading = "";
+              }
+            }
+          }
+        });
+
+        // 🔸 Подвійний клік → відкрити файл
+        item.addEventListener("dblclick", async (e) => {
+          e.stopPropagation();
+          await openFile(entry);
+        });
+      }
+    }
+
+    setStatus(`Завантажено ${entries.length} елементів`, "success", { ttl: 1200 });
+  } catch (err) {
+    console.error("Помилка при побудові дерева:", err);
+    setStatus("Не вдалося прочитати теку", "error", { persist: true });
+  }
+}
+
+// ===================================================
+// 🔹 Рекурсивне побудування дерева Smart Object-ів
+// ===================================================
+function renderSmartTree(nodes, container) {
+  if (!nodes || !nodes.length) {
+    const empty = document.createElement("div");
+    empty.className = "tree-item";
+    empty.style.opacity = "0.7";
+    empty.append(document.createTextNode("— Смарт-об’єкти не знайдено —"));
+    container.appendChild(empty);
+    return;
+  }
+
+  for (const node of nodes) {
+    const item = document.createElement("div");
+    item.className = "tree-item";
+
+    // іконка смарту
+    const smartIcon = createIconImg(ICONS.smart, "🧩");
+    const name = document.createElement("span");
+    name.textContent = node.name;
+
+    item.append(smartIcon, name);
+    container.appendChild(item);
+
+    if (node.children && node.children.length) {
+      const childrenContainer = document.createElement("div");
+      childrenContainer.className = "tree-children";
+      childrenContainer.style.display = "none";
+      container.appendChild(childrenContainer);
+
+      let expanded = false;
+      item.addEventListener("click", (e) => {
+        e.stopPropagation();
+        expanded = !expanded;
+        childrenContainer.style.display = expanded ? "block" : "none";
+      });
+
+      renderSmartTree(node.children, childrenContainer);
+    }
+  }
+}
+
+// ===================================================
+// 🔹 Аналіз Smart Object-ів з PSD/PSB (фонова логіка)
+//    Покриває 3 сценарії: закритий, відкритий-неактивний, активний
+// ===================================================
+async function analyzeSmartObjectsFromFile(fileEntry) {
+  const { app, core } = require("photoshop");
+
+  return await core.executeAsModal(async () => {
+    const previousDoc = app.activeDocument ?? null;
+    const docsBefore = app.documents.length;
+
+    // Відкриваємо (Photoshop сам переключить фокус на цей документ)
+    await app.open(fileEntry);
+    const targetDoc = app.activeDocument;
+
+    // 🧠 Збираємо Smart Object-и (рекурсивно)
+    const smartData = await collectSmartObjectsRecursive(targetDoc);
+
+    // Якщо документ був відкритий спеціально нами — закриваємо
+    if (app.documents.length > docsBefore) {
+      await targetDoc.closeWithoutSaving();
+    }
+
+    // Повернути користувача назад, якщо ми змінили активний документ
+    if (previousDoc && previousDoc !== targetDoc) {
+      app.activeDocument = previousDoc;
+    }
+
+    return smartData;
+  }, { commandName: "Analyze Smart Objects" });
+}
+
+// ===================================================
+// 🔹 Рекурсивний збір Smart Object-ів
+// ===================================================
+async function collectSmartObjectsRecursive(doc, depth = 0, maxDepth = 4) {
+  const { app, core } = require("photoshop");
+  const result = [];
+  if (depth > maxDepth) return result;
+
+  // Важливо: у Photoshop колекції можуть бути не масивоподібними; приведемо до plain масиву
+  const layers = Array.from(doc.layers || []);
+
+  for (const layer of layers) {
+    if (layer.kind === "smartObject") {
+      const info = { name: layer.name, type: "smart", children: [] };
+
+      // Якщо linked → додаємо шлях, без відкриття
+      if (layer.smartObject && layer.smartObject.link && layer.smartObject.link.path) {
+        info.path = layer.smartObject.link.path;
+      } else {
+        // embedded → відкриваємо, аналізуємо, закриваємо
+        await core.executeAsModal(async () => {
+          await layer.smartObject.open();
+        }, { commandName: "Open Smart Object" });
+
+        const innerDoc = app.activeDocument;
+        info.children = await collectSmartObjectsRecursive(innerDoc, depth + 1, maxDepth);
+
+        await core.executeAsModal(async () => {
+          await innerDoc.closeWithoutSaving();
+        });
+      }
+
+      result.push(info);
+    }
+  }
+  return result;
+}
+
+// ===================================================
+// 🔹 Відкрити файл у Photoshop (через executeAsModal)
+// ===================================================
+async function openFile(fileEntry) {
+  const { app, core } = require("photoshop");
+  try {
+    const ext = (fileEntry.name.split(".").pop() || "").toLowerCase();
+
+    if (!SUPPORTED_EXTENSIONS.includes(ext)) {
+      setStatus(`${fileEntry.name} — формат не підтримується`, "warn");
+      return;
+    }
+
+    setStatus(`Відкриття: ${fileEntry.name}`, "info", { persist: true });
+
+    await core.executeAsModal(async () => {
+      await app.open(fileEntry);
+    }, { commandName: "Відкрити файл через Explorer" });
+
+    setStatus(`Відкрито ${fileEntry.name}`, "success", { ttl: 1400 });
+  } catch (err) {
+    console.error("Помилка при відкритті файлу:", err);
+    setStatus("Неможливо відкрити файл", "error", { persist: true });
+  }
+}
+
+// ===================================================
+// 🔹 entrypoints
+// ===================================================
+entrypoints.setup({
+  panels: {
+    mainPanel: {
+      show(event) {
+        const panel = event.node;
+        try {
+          if (panel && !panel.icon) {
+            panel.icon = "icons/icon.png";
+          }
+        } catch (err) {
+          console.error("Не вдалося встановити іконку:", err);
+        }
+      },
+    },
+  },
+});
+
+console.log("✅ Project Explorer з іконками та Smart Object-ами завантажено успішно");

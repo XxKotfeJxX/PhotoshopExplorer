@@ -52,6 +52,8 @@ body {
   transition: background 0.15s;
 }
 
+.tree-item img { width:16px; height:16px; object-fit:contain; }
+
 .tree-item:hover {
   background: #4a4a4a;
 }

@@ -1,168 +1,63 @@
-/* ===========================
-   🎨 ТЕМА ЗА ЗАМОВЧУВАННЯМ (темна)
-   =========================== */
-:root {
-  --bg: #1f1f23;
-  --panel: #2a2a2f;
-  --text: #e6e6e6;
-  --muted: #a0a0a8;
-  --accent: #6ea8fe;
-  --border: #3a3a40;
-  --hover: #33333a;
-}
-
-/* ===========================
-   📐 БАЗОВІ СТИЛІ
-   =========================== */
-* {
-  box-sizing: border-box;
-  user-select: none;
-}
-
-html, body {
-  height: 100%;
+body {
   margin: 0;
-  padding: 0;
-  font: 13px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: var(--bg);
-  color: var(--text);
+  background-color: #2e2e2e;
+  color: #fff;
+  font-family: "Source Sans Pro", sans-serif;
+}
+
+.wrapper {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: 16px;
   display: flex;
   flex-direction: column;
 }
 
-/* ===========================
-   🧭 ВЕРХНЯ ПАНЕЛЬ
-   =========================== */
-.toolbar {
+.wrapper > * {
+  flex: 0 0 auto;
+  margin: 4px 0;
+}
+
+.row {
   display: flex;
+  flex-direction: row;
+  align-items: flex-end;
   gap: 8px;
-  padding: 8px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
 }
 
-.toolbar button {
-  background: #3b3b42;
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 6px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s ease;
-}
-
-.toolbar button:hover {
-  background: var(--hover);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-/* ===========================
-   📂 ПОТОЧНИЙ ШЛЯХ
-   =========================== */
-.path {
-  padding: 6px 8px;
-  color: var(--muted);
-  border-bottom: 1px solid var(--border);
-  background: #222227;
-  font-size: 12px;
-  word-break: break-all;
-}
-
-/* ===========================
-   🌳 ДЕРЕВО ФАЙЛІВ
-   =========================== */
-.tree {
-  padding: 6px 8px;
-  overflow-y: auto;
-  flex: 1;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-
-.node {
+.infoRow {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 6px;
+  flex-direction: row;
+  align-items: baseline;
+  color: #ccc;
+  margin-top: 8px;
+}
+
+.webview-result {
+  background-color: #3a3a3a;
   border-radius: 6px;
-  cursor: default;
-  transition: background 0.15s ease;
+  padding: 10px;
+  margin-top: 30px;
 }
 
-.node:hover {
-  background: var(--hover);
+#logWebview {
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #555;
+  font-family: "Source Code Pro", monospace;
+  white-space: pre-wrap;
+  background: #1e1e1e;
+  color: #eee;
 }
 
-.node .name {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.node .meta {
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.folder { font-weight: 500; cursor: pointer; }
-.file { cursor: pointer; }
-
-.chev { width: 14px; text-align: center; color: var(--muted); }
-.icon { width: 16px; text-align: center; }
-.children { margin-left: 16px; }
-.hidden { display: none; }
-
-/* ===========================
-   📊 СТАТУС-БАР
-   =========================== */
-.status {
-  padding: 6px 8px;
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  background: var(--panel);
-  font-size: 12px;
-}
-
-/* ===========================
-   ☀️ СВІТЛА ТЕМА
-   =========================== */
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #f5f5f5;
-    --panel: #ebebeb;
-    --text: #202020;
-    --muted: #5a5a5a;
-    --accent: #2a6eff;
-    --border: #c8c8c8;
-    --hover: #dddddd;
-  }
-
-  .toolbar button {
-    background: #f0f0f0;
-    border: 1px solid var(--border);
-    color: var(--text);
-  }
-
-  .toolbar button:hover {
-    background: #ffffff;
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  .path {
-    background: #f0f0f0;
-    color: var(--muted);
-  }
-
-  .node:hover {
-    background: var(--hover);
-  }
-
-  .status {
-    background: #ebebeb;
-    color: var(--muted);
-  }
+textarea {
+  width: 100%;
+  height: 60px;
+  background: #1e1e1e;
+  border: 1px solid #555;
+  color: #fff;
+  resize: none;
+  border-radius: 4px;
+  padding: 6px;
 }

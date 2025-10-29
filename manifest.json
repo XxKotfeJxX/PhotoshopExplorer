@@ -1,16 +1,113 @@
 {
-  "id": "com.xxkotfejxx.project-explorer",
-  "name": "Project Explorer",
+  "id": "KotofeJ-proj",
+  "name": "Project Exp",
   "version": "0.1.0",
+  "main": "index.html",
   "manifestVersion": 5,
-  "host": { "app": "PS", "minVersion": "23.0.0" },
-  "entryPoints": [
+  "host": [
+    {
+      "app": "PS",
+      "minVersion": "26.11.1"
+    }
+  ],
+  "requiredPermissions": {
+    "webview": {
+      "allow": "yes",
+      "domains": [
+        "http://127.0.0.1:7724"
+      ],
+      "enableMessageBridge": "localAndRemote"
+    }
+  },
+  "entrypoints": [
     {
       "type": "panel",
-      "id": "project-explorer",
-      "label": "Project Explorer",
-      "icon": "icons/icon.png",
-      "main": "index.html"
+      "id": "mainPanel",
+      "label": "WebView Sample",
+      "minimumSize": {
+        "width": 250,
+        "height": 700
+      },
+      "maximumSize": {
+        "width": 2000,
+        "height": 2000
+      },
+      "preferredDockedSize": {
+        "width": 250,
+        "height": 700
+      },
+      "preferredFloatingSize": {
+        "width": 250,
+        "height": 70
+      },
+      "icons": [
+        {
+          "width": 32,
+          "height": 32,
+          "path": "images/icon.png",
+          "scale": [
+            1,
+            2
+          ],
+          "theme": [
+            "dark",
+            "darkest"
+          ],
+          "species": [
+            "generic"
+          ]
+        },
+        {
+          "width": 32,
+          "height": 32,
+          "path": "images/icon.png",
+          "scale": [
+            1,
+            2
+          ],
+          "theme": [
+            "lightest",
+            "light"
+          ],
+          "species": [
+            "generic"
+          ]
+        }
+      ]
+    }
+  ],
+  "icons": [
+    {
+      "width": 32,
+      "height": 32,
+      "path": "images/icon@1x.png",
+      "scale": [
+        1,
+        2
+      ],
+      "theme": [
+        "dark",
+        "darkest"
+      ],
+      "species": [
+        "generic"
+      ]
+    },
+    {
+      "width": 32,
+      "height": 32,
+      "path": "images/icon@2x.png",
+      "scale": [
+        1,
+        2
+      ],
+      "theme": [
+        "lightest",
+        "light"
+      ],
+      "species": [
+        "generic"
+      ]
     }
   ]
 }

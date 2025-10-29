@@ -1,0 +1,16 @@
+{
+  "id": "com.xxkotfejxx.project-explorer",
+  "name": "Project Explorer",
+  "version": "0.1.0",
+  "manifestVersion": 5,
+  "host": { "app": "PS", "minVersion": "23.0.0" },
+  "entryPoints": [
+    {
+      "type": "panel",
+      "id": "project-explorer",
+      "label": "Project Explorer",
+      "icon": "icons/icon.png",
+      "main": "index.html"
+    }
+  ]
+}

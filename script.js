@@ -32,11 +32,11 @@ entrypoints.setup({
           // 2️⃣ Ініціалізація файлового дерева та кнопок
           initTreeUI(uxp);
 
-          console.log("✅ Project Explorer ініціалізовано успішно");
+          console.log(" Project Explorer ініціалізовано успішно");
         } catch (err) {
-          console.error("❌ Помилка ініціалізації панелі:", err);
+          console.error(" Помилка ініціалізації панелі:", err);
           const statusBar = document.getElementById("statusBar");
-          if (statusBar) statusBar.textContent = "❌ Помилка ініціалізації";
+          if (statusBar) statusBar.textContent = " Помилка ініціалізації";
         }
       },
       hide() {

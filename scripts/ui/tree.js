@@ -32,10 +32,10 @@ function initTreeUI(uxp) {
 
       currentPath.textContent = currentFolder.nativePath || "(невідомо)";
       await renderTree(currentFolder, fileTree);
-      setStatus("✅ Список оновлено", "success");
+      setStatus(" Список оновлено", "success");
     } catch (err) {
       console.error("Помилка при виборі теки:", err);
-      setStatus("❌ Помилка при виборі теки", "error", { persist: true });
+      setStatus(" Помилка при виборі теки", "error", { persist: true });
     }
   });
 
@@ -77,10 +77,10 @@ async function renderTree(folder, container) {
       }
     }
 
-    setStatus(`✅ Завантажено ${entries.length} елементів`, "success", { ttl: 1500 });
+    setStatus(` Завантажено ${entries.length} елементів`, "success", { ttl: 1500 });
   } catch (err) {
     console.error("Помилка при побудові дерева:", err);
-    setStatus("❌ Не вдалося прочитати теку", "error", { persist: true });
+    setStatus(" Не вдалося прочитати теку", "error", { persist: true });
   }
 }
 
@@ -155,10 +155,10 @@ function setupFileItem(entry, item, container) {
           renderSmartTree(smartTree, childrenContainer);
           childrenContainer.dataset.loaded = "1";
 
-          setStatus(`✅ Зчитано смарт-об'єкти (${smartTree.length})`, "success", { ttl: 1800 });
+          setStatus(` Зчитано смарт-об'єкти (${smartTree.length})`, "success", { ttl: 1800 });
         } catch (err) {
           console.error("Помилка аналізу:", err);
-          setStatus("❌ Помилка аналізу файлу", "error", { persist: true });
+          setStatus(" Помилка аналізу файлу", "error", { persist: true });
         } finally {
           item.dataset.loading = "";
         }

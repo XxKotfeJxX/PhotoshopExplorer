@@ -1,0 +1,168 @@
+/* ===========================
+   🎨 ТЕМА ЗА ЗАМОВЧУВАННЯМ (темна)
+   =========================== */
+:root {
+  --bg: #1f1f23;
+  --panel: #2a2a2f;
+  --text: #e6e6e6;
+  --muted: #a0a0a8;
+  --accent: #6ea8fe;
+  --border: #3a3a40;
+  --hover: #33333a;
+}
+
+/* ===========================
+   📐 БАЗОВІ СТИЛІ
+   =========================== */
+* {
+  box-sizing: border-box;
+  user-select: none;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font: 13px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===========================
+   🧭 ВЕРХНЯ ПАНЕЛЬ
+   =========================== */
+.toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.toolbar button {
+  background: #3b3b42;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.toolbar button:hover {
+  background: var(--hover);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ===========================
+   📂 ПОТОЧНИЙ ШЛЯХ
+   =========================== */
+.path {
+  padding: 6px 8px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  background: #222227;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+/* ===========================
+   🌳 ДЕРЕВО ФАЙЛІВ
+   =========================== */
+.tree {
+  padding: 6px 8px;
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: default;
+  transition: background 0.15s ease;
+}
+
+.node:hover {
+  background: var(--hover);
+}
+
+.node .name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.node .meta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.folder { font-weight: 500; cursor: pointer; }
+.file { cursor: pointer; }
+
+.chev { width: 14px; text-align: center; color: var(--muted); }
+.icon { width: 16px; text-align: center; }
+.children { margin-left: 16px; }
+.hidden { display: none; }
+
+/* ===========================
+   📊 СТАТУС-БАР
+   =========================== */
+.status {
+  padding: 6px 8px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--panel);
+  font-size: 12px;
+}
+
+/* ===========================
+   ☀️ СВІТЛА ТЕМА
+   =========================== */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f5f5f5;
+    --panel: #ebebeb;
+    --text: #202020;
+    --muted: #5a5a5a;
+    --accent: #2a6eff;
+    --border: #c8c8c8;
+    --hover: #dddddd;
+  }
+
+  .toolbar button {
+    background: #f0f0f0;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  .toolbar button:hover {
+    background: #ffffff;
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .path {
+    background: #f0f0f0;
+    color: var(--muted);
+  }
+
+  .node:hover {
+    background: var(--hover);
+  }
+
+  .status {
+    background: #ebebeb;
+    color: var(--muted);
+  }
+}

@@ -1,112 +1,32 @@
 {
-  "id": "KotofeJ-proj",
-  "name": "Project Exp",
+  "id": "PhotoshopExplorer",
+  "name": "Project Explorer",
   "version": "0.1.0",
-  "main": "index.html",
   "manifestVersion": 5,
-  "host": [
-    {
-      "app": "PS",
-      "minVersion": "26.11.1"
-    }
-  ],
-  "requiredPermissions": {
-    "webview": {
-      "allow": "yes",
-      "domains": [
-        "http://127.0.0.1:7724"
-      ],
-      "enableMessageBridge": "localAndRemote"
-    }
-  },
-  "entrypoints": [
-    {
-      "type": "panel",
-      "id": "mainPanel",
-      "label": "WebView Sample",
-      "minimumSize": {
-        "width": 250,
-        "height": 700
-      },
-      "maximumSize": {
-        "width": 2000,
-        "height": 2000
-      },
-      "preferredDockedSize": {
-        "width": 250,
-        "height": 700
-      },
-      "preferredFloatingSize": {
-        "width": 250,
-        "height": 70
-      },
-      "icons": [
-        {
-          "width": 32,
-          "height": 32,
-          "path": "icons/icon.png",
-          "scale": [
-            1,
-            2
-          ],
-          "theme": [
-            "dark",
-            "darkest"
-          ],
-          "species": [
-            "generic"
-          ]
-        },
-        {
-          "width": 32,
-          "height": 32,
-          "path": "icons/icon.png",
-          "scale": [
-            1,
-            2
-          ],
-          "theme": [
-            "lightest",
-            "light"
-          ],
-          "species": [
-            "generic"
-          ]
-        }
-      ]
-    }
-  ],
+  "main": "index.html",
+  "host": [{ "app": "PS", "minVersion": "26.11.1" }],
+
   "icons": [
     {
       "width": 32,
       "height": 32,
-      "path": "icons/icon.png",
-      "scale": [
-        1,
-        2
-      ],
-      "theme": [
-        "dark",
-        "darkest"
-      ],
-      "species": [
-        "generic"
-      ]
-    },
+      "path": "icons/icon.png"
+    }
+  ],
+
+  "entryPoints": [
     {
-      "width": 32,
-      "height": 32,
-      "path": "icons/icon.png",
-      "scale": [
-        1,
-        2
-      ],
-      "theme": [
-        "lightest",
-        "light"
-      ],
-      "species": [
-        "generic"
+      "type": "panel",
+      "id": "mainPanel",
+      "label": "Project Explorer",
+      "minimumSize": { "width": 250, "height": 700 },
+      "preferredDockedSize": { "width": 300, "height": 800 },
+      "icons": [
+        {
+          "width": 32,
+          "height": 32,
+          "path": "icons/icon.png"
+        }
       ]
     }
   ]

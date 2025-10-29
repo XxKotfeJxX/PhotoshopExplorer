@@ -8,56 +8,44 @@ body {
 .wrapper {
   position: absolute;
   inset: 0;
-  overflow: auto;
-  padding: 16px;
   display: flex;
   flex-direction: column;
-}
-
-.wrapper > * {
-  flex: 0 0 auto;
-  margin: 4px 0;
+  padding: 16px;
+  overflow: auto;
 }
 
 .row {
   display: flex;
-  flex-direction: row;
-  align-items: flex-end;
   gap: 8px;
+  margin-bottom: 10px;
 }
 
-.infoRow {
-  display: flex;
-  flex-direction: row;
-  align-items: baseline;
+#currentPath {
   color: #ccc;
-  margin-top: 8px;
+  margin-bottom: 10px;
 }
 
-.webview-result {
-  background-color: #3a3a3a;
+.file-list {
+  flex: 1 1 auto;
+  background: #3a3a3a;
   border-radius: 6px;
-  padding: 10px;
-  margin-top: 30px;
+  padding: 8px;
+  overflow-y: auto;
+  border: 1px solid #555;
 }
 
-#logWebview {
-  padding: 10px;
+.file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  margin: 2px 0;
   border-radius: 4px;
-  border: 1px solid #555;
-  font-family: "Source Code Pro", monospace;
-  white-space: pre-wrap;
-  background: #1e1e1e;
-  color: #eee;
+  background: #2f2f2f;
+  cursor: pointer;
+  transition: background 0.15s;
 }
 
-textarea {
-  width: 100%;
-  height: 60px;
-  background: #1e1e1e;
-  border: 1px solid #555;
-  color: #fff;
-  resize: none;
-  border-radius: 4px;
-  padding: 6px;
+.file-item:hover {
+  background: #4a4a4a;
 }

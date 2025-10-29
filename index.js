@@ -1,79 +1,66 @@
-const uxp = require('uxp');
-// ======= Webview in a dialog =======
-const openDialogBtn = document.getElementById("openDialogBtn");
-// hiding webview in dialog button by default and enabling for apps other than XD later
-// uxp.host is not available in XD and throws TypeError thats why using try catch
-try {
-    openDialogBtn.style.display = uxp?.host?.name !== "XD" ? "flex" : "none";
-} catch (error) {
-    openDialogBtn.style.display="none";
-    console.log(error?.message);
-}
-openDialogBtn.onclick = showDialog;
-function showDialog() {
-    const dialog = document.getElementById("dialog");
-    document.appendChild(dialog).showModal();
-}
+import { localFileSystem } from "uxp";
 
-// print events
-let dialogWebview = document.getElementById("dialogWebview");
-dialogWebview.addEventListener("loadstart", (event) => {
-    console.log("events onloadstart : ", event.url)
-    document.getElementById("dialogLogs").value = "loadstart:" + event.url + "\n" + document.getElementById("dialogLogs").value;
-});
-dialogWebview.addEventListener("loadstop", (event) => {
-    console.log("events onloadstop : ", event.url)
-    document.getElementById("dialogLogs").value = "loadstop:" + event.url + "\n" + document.getElementById("dialogLogs").value;
-});
-dialogWebview.addEventListener("loaderror", (event) => {
-    console.log("events onloaderror : ", event.url)
-    document.getElementById("dialogLogs").value = "loaderror:" + event.url + "\n" + document.getElementById("dialogLogs").value;
+const openFolderBtn = document.getElementById("openFolderBtn");
+const refreshBtn = document.getElementById("refreshBtn");
+const fileList = document.getElementById("fileList");
+const currentPath = document.getElementById("currentPath");
+const statusBar = document.getElementById("statusBar");
+
+let currentFolder = null;
+
+// 🔹 Вибір теки
+openFolderBtn.addEventListener("click", async () => {
+  try {
+    currentFolder = await localFileSystem.getFolder();
+    if (!currentFolder) return;
+    currentPath.textContent = currentFolder.nativePath;
+    await loadFolderContents();
+  } catch (err) {
+    console.error(err);
+    statusBar.textContent = "❌ Помилка при виборі теки";
+  }
 });
 
+// 🔹 Оновлення
+refreshBtn.addEventListener("click", () => {
+  if (currentFolder) loadFolderContents();
+});
 
-// send instructions to webview content
-const dialogCreateTriangleBtn = document.getElementById("dialogCreateTriangleBtn");
-dialogCreateTriangleBtn.onclick = postMessageCreateTriangleInDialog;
-function postMessageCreateTriangleInDialog() {
-    dialogWebview.postMessage("createTriangle");
-}
+// 🔹 Завантаження вмісту теки
+async function loadFolderContents() {
+  try {
+    statusBar.textContent = "Завантаження...";
+    const entries = await currentFolder.getEntries();
+    fileList.innerHTML = "";
 
-const dialogTransformTriangleBtn = document.getElementById("dialogTransformTriangleBtn");
-dialogTransformTriangleBtn.onclick = postMessageRotateTriangleInDialog;
-function postMessageRotateTriangleInDialog() {
-    dialogWebview.postMessage("transformTriangle");
-}
+    for (const entry of entries) {
+      const item = document.createElement("div");
+      item.className = "file-item";
+      item.textContent = entry.name;
 
-// ======= Webview in the plugin panel =======
+      // позначаємо тип
+      const label = document.createElement("sp-detail");
+      label.size = "xs";
+      label.textContent = entry.isFile ? "📄" : "📁";
+      item.prepend(label);
 
-const openPanelBtn = document.getElementById("openPanelBtn");
-openPanelBtn.onclick = showWebViewInPanel;
-function showWebViewInPanel() {
-    const webviewInPanel = document.getElementById("webviewInPanel");
-    webviewInPanel.style.display = "block";
-}
+      // клік по файлу/теці
+      item.addEventListener("click", async () => {
+        if (entry.isFolder) {
+          currentFolder = entry;
+          currentPath.textContent = entry.nativePath;
+          await loadFolderContents();
+        } else {
+          statusBar.textContent = `Файл: ${entry.name}`;
+        }
+      });
 
-// send instructions to webview content
-let panelWebview = document.getElementById("panelWebview");
-const panelCreateTriangleBtn = document.getElementById("panelCreateTriangleBtn");
-panelCreateTriangleBtn.onclick = postMessageCreateTriangleInPanel;
-function postMessageCreateTriangleInPanel() {
-    panelWebview.postMessage("createTriangle");
-}
-
-const panelTransformTriangleBtn = document.getElementById("panelTransformTriangleBtn");
-panelTransformTriangleBtn.onclick = postMessageRotateTriangleInPanel;
-function postMessageRotateTriangleInPanel() {
-    panelWebview.postMessage("transformTriangle");
-}
-
-
-// ======= receive message from webview content =======
-window.addEventListener("message", (e) => {
-    console.log(`Message from WebView(Origin:${e.origin}): ${e.data}`);
-    if (e.data.key === "imageDetails") {
-        document.getElementById("snapshot").src = e.data.value;
-    } else if (e.data.key === "canvasDetails") {
-        document.getElementById("logWebview").innerText = e.data.value;
+      fileList.appendChild(item);
     }
-});
+
+    statusBar.textContent = `Готово (${entries.length} елементів)`;
+  } catch (err) {
+    console.error(err);
+    statusBar.textContent = "❌ Помилка читання теки";
+  }
+}

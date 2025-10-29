@@ -1,4 +1,4 @@
-import { localFileSystem } from "uxp";
+import { localFileSystem, entrypoints  } from "uxp";
 
 const openFolderBtn = document.getElementById("openFolderBtn");
 const refreshBtn = document.getElementById("refreshBtn");
@@ -64,3 +64,21 @@ async function loadFolderContents() {
     statusBar.textContent = "❌ Помилка читання теки";
   }
 }
+
+entrypoints.setup({
+  panels: {
+    mainPanel: {
+      show(event) {
+        const panel = event.node; // це кореневий DOM вузол панелі
+        try {
+          // встановлюємо іконку панелі вручну
+          if (panel && panel.icon === undefined) {
+            panel.icon = "icons/icon32.png"; // шлях відносно manifest.json
+          }
+        } catch (err) {
+          console.error("Не вдалося встановити іконку:", err);
+        }
+      },
+    },
+  },
+});

@@ -73,7 +73,7 @@ entrypoints.setup({
         try {
           // встановлюємо іконку панелі вручну
           if (panel && panel.icon === undefined) {
-            panel.icon = "icons/icon32.png"; // шлях відносно manifest.json
+            panel.icon = "icons/icon.png"; // шлях відносно manifest.json
           }
         } catch (err) {
           console.error("Не вдалося встановити іконку:", err);

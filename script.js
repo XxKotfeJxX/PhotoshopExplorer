@@ -1,5 +1,5 @@
 // ===================================================
-// 🔹 Photoshop Project Explorer — з підтримкою Smart Objects
+// 🔹 Photoshop Project Explorer — з іконками, статусами і Smart Objects
 // ===================================================
 
 // Імпорт системних API
@@ -23,21 +23,108 @@ const SUPPORTED_EXTENSIONS = [
 ];
 
 // ===================================================
+// 🔹 Іконки для типів файлів (локальні з fallback)
+// ===================================================
+
+/**
+ * Поклади ці файли в /icons (або зміни шляхи):
+ * - file-psd.svg / file-psb.svg / file-image.svg / file-pdf.svg / file-generic.svg
+ * - folder.svg / folder-open.svg / smart.svg
+ * Якщо якихось немає — підставляться емодзі.
+ */
+const ICONS = {
+  folder: "icons/folder.png",
+  folderOpen: "icons/folder-open.png",
+  psd: "icons/file-psd.png",
+  psb: "icons/file-psb.png",
+  image: "icons/file-image.png",
+  pdf: "icons/file-pdf.png",
+  generic: "icons/file-generic.png",
+  smart: "icons/smart.png",
+};
+
+// Перевірка наявності шляху (UXP не дає sync перевірку існування файлу в пакеті легко,
+// тому робимо простий fallback у рантаймі: якщо картинка не завантажилась — замінюємо на емодзі)
+function createIconImg(src, fallbackEmoji) {
+  const img = document.createElement("img");
+  img.src = src;
+  img.alt = "";
+  img.width = 16;
+  img.height = 16;
+  img.style.display = "inline-block";
+  img.style.width = "16px";
+  img.style.height = "16px";
+  img.style.objectFit = "contain";
+  img.onerror = () => {
+    // Якщо нема такого файлу — замінюємо на емодзі
+    img.replaceWith(document.createTextNode(fallbackEmoji));
+  };
+  return img;
+}
+
+function getFileIconForEntry(entry) {
+  if (entry.isFolder) {
+    return createIconImg(ICONS.folder, "📁");
+  }
+  const ext = (entry.name.split(".").pop() || "").toLowerCase();
+  if (ext === "psd") return createIconImg(ICONS.psd, "🅿️");
+  if (ext === "psb") return createIconImg(ICONS.psb, "🅿️");
+  if (["png","jpg","jpeg","gif","bmp","tif","tiff","tga","svg","heic","webp"].includes(ext)) {
+    return createIconImg(ICONS.image, "🖼️");
+  }
+  if (ext === "pdf") return createIconImg(ICONS.pdf, "📄");
+  return createIconImg(ICONS.generic, "📄");
+}
+
+// ===================================================
+// 🔹 Менеджер статус-повідомлень з автоприбиранням
+// ===================================================
+let statusTimer = null;
+/**
+ * setStatus("Текст", "info"|"success"|"warn"|"error", { persist?: boolean, ttl?: number })
+ */
+function setStatus(message, type = "info", options = {}) {
+  const { persist = false, ttl = 2000 } = options;
+  // стилізація легка через префікс-емодзі
+  const prefix = {
+    info: "ℹ️",
+    success: "✅",
+    warn: "⚠️",
+    error: "❌",
+  }[type] || "ℹ️";
+
+  statusBar.textContent = `${prefix} ${message}`;
+
+  if (statusTimer) {
+    clearTimeout(statusTimer);
+    statusTimer = null;
+  }
+  if (!persist) {
+    statusTimer = setTimeout(() => {
+      // прибираємо текст; можна показувати "Готово" як дефолт
+      statusBar.textContent = "Готово";
+      statusTimer = null;
+    }, ttl);
+  }
+}
+
+// ===================================================
 // 🔹 Вибір теки
 // ===================================================
 openFolderBtn.addEventListener("click", async () => {
   try {
     currentFolder = await localFileSystem.getFolder({ allowSystem: true });
     if (!currentFolder) {
-      statusBar.textContent = "🚫 Теку не вибрано";
+      setStatus("Теку не вибрано", "warn");
       return;
     }
 
     currentPath.textContent = currentFolder.nativePath || "(невідомо)";
     await renderTree(currentFolder, fileTree);
+    setStatus("Список оновлено", "success");
   } catch (err) {
     console.error("Помилка при виборі теки:", err);
-    statusBar.textContent = "❌ Помилка при виборі теки";
+    setStatus("Помилка при виборі теки", "error", { persist: true });
   }
 });
 
@@ -53,23 +140,24 @@ refreshBtn.addEventListener("click", () => {
 // ===================================================
 async function renderTree(folder, container) {
   container.innerHTML = "";
-  statusBar.textContent = "Завантаження...";
+  setStatus("Завантаження...");
 
   try {
     const entries = await folder.getEntries();
     if (!entries.length) {
-      statusBar.textContent = "📂 Порожня тека";
+      setStatus("Порожня тека", "info", { ttl: 1200 });
       return;
     }
 
     for (const entry of entries) {
       const item = document.createElement("div");
       item.className = "tree-item";
-      const icon = document.createElement("span");
-      icon.textContent = entry.isFile ? "📄" : "📁";
+
+      const iconNode = getFileIconForEntry(entry);
       const name = document.createElement("span");
       name.textContent = entry.name;
-      item.append(icon, name);
+
+      item.append(iconNode, name);
       container.appendChild(item);
 
       // ===================================================
@@ -86,14 +174,18 @@ async function renderTree(folder, container) {
           e.stopPropagation();
           expanded = !expanded;
           if (expanded) {
-            icon.textContent = "📂";
+            // змінюємо іконку папки (спробуємо замінити, якщо це <img> або емодзі)
+            if (iconNode.tagName === "IMG") iconNode.src = ICONS.folderOpen;
+            else iconNode.textContent = "📂";
+
             if (!childrenContainer.dataset.loaded) {
               await renderTree(entry, childrenContainer);
-              childrenContainer.dataset.loaded = true;
+              childrenContainer.dataset.loaded = "1";
             }
             childrenContainer.style.display = "block";
           } else {
-            icon.textContent = "📁";
+            if (iconNode.tagName === "IMG") iconNode.src = ICONS.folder;
+            else iconNode.textContent = "📁";
             childrenContainer.style.display = "none";
           }
         });
@@ -110,23 +202,44 @@ async function renderTree(folder, container) {
           e.stopPropagation();
 
           if (["psd", "psb"].includes(ext)) {
-            const childrenContainer =
+            // захист від повторного запуску аналізу
+            if (item.dataset.loading === "1") return;
+
+            // знайдемо/створимо контейнер під деревце смартів
+            let childrenContainer =
               item.nextSibling && item.nextSibling.classList.contains("tree-children")
                 ? item.nextSibling
-                : document.createElement("div");
+                : null;
 
-            childrenContainer.className = "tree-children";
-            container.insertBefore(childrenContainer, item.nextSibling);
-            childrenContainer.style.display =
-              childrenContainer.style.display === "none" ? "block" : "none";
+            if (!childrenContainer) {
+              childrenContainer = document.createElement("div");
+              childrenContainer.className = "tree-children";
+              container.insertBefore(childrenContainer, item.nextSibling);
+            }
 
-            // Якщо ще не зчитували
+            // toggle логіка
+            const isHidden = childrenContainer.style.display === "none" || !childrenContainer.style.display;
+            childrenContainer.style.display = isHidden ? "block" : "none";
+            if (!isHidden) return; // вже було завантажено і зараз просто ховаємо/показуємо
+
+            // Якщо ще не зчитували — запускаємо аналіз
             if (!childrenContainer.dataset.loaded) {
-              statusBar.textContent = `🧩 Аналіз ${entry.name}...`;
-              const smartTree = await analyzeSmartObjectsFromFile(entry);
-              renderSmartTree(smartTree, childrenContainer);
-              childrenContainer.dataset.loaded = true;
-              statusBar.textContent = `✅ Зчитано смарт-об'єкти (${smartTree.length})`;
+              item.dataset.loading = "1";
+              setStatus(`Аналіз ${entry.name}...`, "info", { persist: true });
+
+              try {
+                const smartTree = await analyzeSmartObjectsFromFile(entry);
+                childrenContainer.innerHTML = ""; // на випадок, якщо там щось було
+                renderSmartTree(smartTree, childrenContainer);
+
+                childrenContainer.dataset.loaded = "1";
+                setStatus(`Зчитано смарт-об'єкти: ${smartTree.length}`, "success", { ttl: 1600 });
+              } catch (err) {
+                console.error("Аналіз помилковий:", err);
+                setStatus("Помилка аналізу файлу", "error", { persist: true });
+              } finally {
+                item.dataset.loading = "";
+              }
             }
           }
         });
@@ -139,10 +252,10 @@ async function renderTree(folder, container) {
       }
     }
 
-    statusBar.textContent = `✅ Завантажено ${entries.length} елементів`;
+    setStatus(`Завантажено ${entries.length} елементів`, "success", { ttl: 1200 });
   } catch (err) {
     console.error("Помилка при побудові дерева:", err);
-    statusBar.textContent = "❌ Не вдалося прочитати теку";
+    setStatus("Не вдалося прочитати теку", "error", { persist: true });
   }
 }
 
@@ -150,16 +263,25 @@ async function renderTree(folder, container) {
 // 🔹 Рекурсивне побудування дерева Smart Object-ів
 // ===================================================
 function renderSmartTree(nodes, container) {
-  if (!nodes || !nodes.length) return;
+  if (!nodes || !nodes.length) {
+    const empty = document.createElement("div");
+    empty.className = "tree-item";
+    empty.style.opacity = "0.7";
+    empty.append(document.createTextNode("— Смарт-об’єкти не знайдено —"));
+    container.appendChild(empty);
+    return;
+  }
 
   for (const node of nodes) {
     const item = document.createElement("div");
     item.className = "tree-item";
-    const icon = document.createElement("span");
-    icon.textContent = "🧩";
+
+    // іконка смарту
+    const smartIcon = createIconImg(ICONS.smart, "🧩");
     const name = document.createElement("span");
     name.textContent = node.name;
-    item.append(icon, name);
+
+    item.append(smartIcon, name);
     container.appendChild(item);
 
     if (node.children && node.children.length) {
@@ -181,28 +303,29 @@ function renderSmartTree(nodes, container) {
 }
 
 // ===================================================
-// 🔹 Аналіз Smart Object-ів з PSD (фонова логіка)
+// 🔹 Аналіз Smart Object-ів з PSD/PSB (фонова логіка)
+//    Покриває 3 сценарії: закритий, відкритий-неактивний, активний
 // ===================================================
 async function analyzeSmartObjectsFromFile(fileEntry) {
   const { app, core } = require("photoshop");
 
   return await core.executeAsModal(async () => {
     const previousDoc = app.activeDocument ?? null;
-    const openDocsBefore = app.documents.length;
+    const docsBefore = app.documents.length;
 
-    // 🔹 Відкриваємо документ, якщо він ще не відкритий
+    // Відкриваємо (Photoshop сам переключить фокус на цей документ)
     await app.open(fileEntry);
     const targetDoc = app.activeDocument;
 
-    // 🧠 Збираємо Smart Object-и
+    // 🧠 Збираємо Smart Object-и (рекурсивно)
     const smartData = await collectSmartObjectsRecursive(targetDoc);
 
-    // 🔹 Закриваємо документ, якщо він новий
-    if (app.documents.length > openDocsBefore) {
+    // Якщо документ був відкритий спеціально нами — закриваємо
+    if (app.documents.length > docsBefore) {
       await targetDoc.closeWithoutSaving();
     }
 
-    // 🔁 Повертаємо користувача назад, якщо треба
+    // Повернути користувача назад, якщо ми змінили активний документ
     if (previousDoc && previousDoc !== targetDoc) {
       app.activeDocument = previousDoc;
     }
@@ -219,12 +342,15 @@ async function collectSmartObjectsRecursive(doc, depth = 0, maxDepth = 4) {
   const result = [];
   if (depth > maxDepth) return result;
 
-  for (const layer of doc.layers) {
+  // Важливо: у Photoshop колекції можуть бути не масивоподібними; приведемо до plain масиву
+  const layers = Array.from(doc.layers || []);
+
+  for (const layer of layers) {
     if (layer.kind === "smartObject") {
       const info = { name: layer.name, type: "smart", children: [] };
 
-      // Якщо linked → просто додаємо шлях
-      if (layer.smartObject.link && layer.smartObject.link.path) {
+      // Якщо linked → додаємо шлях, без відкриття
+      if (layer.smartObject && layer.smartObject.link && layer.smartObject.link.path) {
         info.path = layer.smartObject.link.path;
       } else {
         // embedded → відкриваємо, аналізуємо, закриваємо
@@ -233,7 +359,7 @@ async function collectSmartObjectsRecursive(doc, depth = 0, maxDepth = 4) {
         }, { commandName: "Open Smart Object" });
 
         const innerDoc = app.activeDocument;
-        info.children = await collectSmartObjectsRecursive(innerDoc, depth + 1);
+        info.children = await collectSmartObjectsRecursive(innerDoc, depth + 1, maxDepth);
 
         await core.executeAsModal(async () => {
           await innerDoc.closeWithoutSaving();
@@ -252,23 +378,23 @@ async function collectSmartObjectsRecursive(doc, depth = 0, maxDepth = 4) {
 async function openFile(fileEntry) {
   const { app, core } = require("photoshop");
   try {
-    const ext = fileEntry.name.split(".").pop().toLowerCase();
+    const ext = (fileEntry.name.split(".").pop() || "").toLowerCase();
 
     if (!SUPPORTED_EXTENSIONS.includes(ext)) {
-      statusBar.textContent = `⚠️ ${fileEntry.name} — формат не підтримується`;
+      setStatus(`${fileEntry.name} — формат не підтримується`, "warn");
       return;
     }
 
-    statusBar.textContent = `📂 Відкриття: ${fileEntry.name}`;
+    setStatus(`Відкриття: ${fileEntry.name}`, "info", { persist: true });
 
     await core.executeAsModal(async () => {
       await app.open(fileEntry);
     }, { commandName: "Відкрити файл через Explorer" });
 
-    statusBar.textContent = `✅ Відкрито ${fileEntry.name}`;
+    setStatus(`Відкрито ${fileEntry.name}`, "success", { ttl: 1400 });
   } catch (err) {
     console.error("Помилка при відкритті файлу:", err);
-    statusBar.textContent = "❌ Неможливо відкрити файл";
+    setStatus("Неможливо відкрити файл", "error", { persist: true });
   }
 }
 
@@ -292,4 +418,4 @@ entrypoints.setup({
   },
 });
 
-console.log("✅ Project Explorer з підтримкою Smart Object-ів завантажено успішно");
+console.log("✅ Project Explorer з іконками та Smart Object-ами завантажено успішно");

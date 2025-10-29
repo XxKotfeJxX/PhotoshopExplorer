@@ -1,5 +1,5 @@
 // ===================================================
-// 🔹 Побудова дерева файлів і Smart Object-ів
+// 🔹 Побудова дерева файлів і Smart Object-ів + груп
 // ===================================================
 
 // Імпорти у стилі CommonJS
@@ -26,7 +26,7 @@ function initTreeUI(uxp) {
     try {
       currentFolder = await localFileSystem.getFolder({ allowSystem: true });
       if (!currentFolder) {
-        setStatus("🚫 Теку не вибрано", "warn");
+        setStatus(" Теку не вибрано", "warn");
         return;
       }
 
@@ -155,7 +155,7 @@ function setupFileItem(entry, item, container) {
           renderSmartTree(smartTree, childrenContainer);
           childrenContainer.dataset.loaded = "1";
 
-          setStatus(` Зчитано смарт-об'єкти (${smartTree.length})`, "success", { ttl: 1800 });
+          setStatus(` Зчитано об'єкти (${smartTree.length})`, "success", { ttl: 1800 });
         } catch (err) {
           console.error("Помилка аналізу:", err);
           setStatus(" Помилка аналізу файлу", "error", { persist: true });
@@ -174,14 +174,14 @@ function setupFileItem(entry, item, container) {
 }
 
 // ===================================================
-// 🔹 Побудова дерева Smart Object-ів
+// 🔹 Побудова дерева Smart Object-ів і груп
 // ===================================================
 function renderSmartTree(nodes, container) {
   if (!nodes || !nodes.length) {
     const empty = document.createElement("div");
     empty.className = "tree-item";
     empty.style.opacity = "0.7";
-    empty.append(document.createTextNode("— Смарт-об’єкти не знайдено —"));
+    empty.append(document.createTextNode("— Об’єкти не знайдено —"));
     container.appendChild(empty);
     return;
   }
@@ -190,13 +190,21 @@ function renderSmartTree(nodes, container) {
     const item = document.createElement("div");
     item.className = "tree-item";
 
-    const icon = createIconImg(ICONS.smart, "🧩");
+    let icon;
+    if (node.type === "group") {
+      icon = createIconImg(ICONS.folder, "📁"); // закрита група
+    } else if (node.type === "smart") {
+      icon = createIconImg(ICONS.smart, "🧩");
+    } else {
+      icon = document.createTextNode("❓");
+    }
+
     const name = document.createElement("span");
     name.textContent = node.name;
-
     item.append(icon, name);
     container.appendChild(item);
 
+    // якщо є вкладення
     if (node.children && node.children.length) {
       const childrenContainer = document.createElement("div");
       childrenContainer.className = "tree-children";
@@ -208,6 +216,11 @@ function renderSmartTree(nodes, container) {
         e.stopPropagation();
         expanded = !expanded;
         childrenContainer.style.display = expanded ? "block" : "none";
+
+        // міняємо іконку групи при розгортанні
+        if (node.type === "group" && icon.tagName === "IMG") {
+          icon.src = expanded ? ICONS.folderOpen : ICONS.folder;
+        }
       });
 
       renderSmartTree(node.children, childrenContainer);

@@ -6,9 +6,9 @@
 const uxp = require("uxp");
 const entrypoints = uxp.entrypoints;
 
-// Імпорт наших модулів
-import { initStatusBar } from "./ui/status.js";
-import { initTreeUI } from "./ui/tree.js";
+// Імпорт наших модулів (CommonJS)
+const { initStatusBar } = require("./scripts/ui/status.js");
+const { initTreeUI } = require("./scripts/ui/tree.js");
 
 // ===================================================
 // 🔹 Entry point для панелі
@@ -16,17 +16,14 @@ import { initTreeUI } from "./ui/tree.js";
 entrypoints.setup({
   panels: {
     mainPanel: {
-      // Викликається коли панель показується користувачу
       show(event) {
         const panel = event.node;
 
         try {
-          // Встановлюємо іконку панелі (для док-іконки)
           if (panel && !panel.icon) {
             panel.icon = "icons/icon.png";
           }
 
-          // Знаходимо основні DOM-елементи
           const statusBar = document.getElementById("statusBar");
 
           // 1️⃣ Ініціалізація статус-бара
@@ -39,14 +36,10 @@ entrypoints.setup({
         } catch (err) {
           console.error("❌ Помилка ініціалізації панелі:", err);
           const statusBar = document.getElementById("statusBar");
-          if (statusBar) {
-            statusBar.textContent = "❌ Помилка ініціалізації";
-          }
+          if (statusBar) statusBar.textContent = "❌ Помилка ініціалізації";
         }
       },
-
-      // Опційно: викликається при приховуванні панелі
-      hide(event) {
+      hide() {
         console.log("ℹ️ Панель приховано");
       },
     },

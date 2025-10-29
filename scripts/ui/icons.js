@@ -1,9 +1,10 @@
 // ===================================================
-// 🔹 Іконки для дерева файлів
+// 🔹 Іконки для дерева файлів (CommonJS)
 // ===================================================
-import { ICONS } from "../constants.js";
 
-export function createIconImg(src, fallbackEmoji) {
+const { ICONS } = require("../constants.js");
+
+function createIconImg(src, fallbackEmoji) {
   const img = document.createElement("img");
   img.src = src;
   img.alt = "";
@@ -17,7 +18,7 @@ export function createIconImg(src, fallbackEmoji) {
   return img;
 }
 
-export function getFileIconForEntry(entry) {
+function getFileIconForEntry(entry) {
   if (entry.isFolder) return createIconImg(ICONS.folder, "📁");
 
   const ext = (entry.name.split(".").pop() || "").toLowerCase();
@@ -30,3 +31,6 @@ export function getFileIconForEntry(entry) {
 
   return createIconImg(ICONS.generic, "📄");
 }
+
+// 🔸 Експортуємо функції
+module.exports = { createIconImg, getFileIconForEntry };

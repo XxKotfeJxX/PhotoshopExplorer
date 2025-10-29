@@ -2,10 +2,11 @@
 // 🔹 Побудова дерева файлів і Smart Object-ів
 // ===================================================
 
-import { SUPPORTED_EXTENSIONS, ICONS } from "../constants.js";
-import { getFileIconForEntry, createIconImg } from "./icons.js";
-import { setStatus } from "./status.js";
-import { openFile, analyzeSmartObjectsFromFile } from "../actions/fileActions.js";
+// Імпорти у стилі CommonJS
+const { SUPPORTED_EXTENSIONS, ICONS } = require("../constants.js");
+const { getFileIconForEntry, createIconImg } = require("./icons.js");
+const { setStatus } = require("./status.js");
+const { openFile, analyzeSmartObjectsFromFile } = require("../actions/fileActions.js");
 
 let currentFolder = null;
 let localFileSystem = null;
@@ -13,7 +14,7 @@ let localFileSystem = null;
 // ===================================================
 // 🔹 Ініціалізація UI (кнопки, слухачі подій)
 // ===================================================
-export function initTreeUI(uxp) {
+function initTreeUI(uxp) {
   localFileSystem = uxp.storage.localFileSystem;
 
   const openFolderBtn = document.getElementById("openFolderBtn");
@@ -46,7 +47,7 @@ export function initTreeUI(uxp) {
 // ===================================================
 // 🔹 Основна функція побудови дерева
 // ===================================================
-export async function renderTree(folder, container) {
+async function renderTree(folder, container) {
   container.innerHTML = "";
   setStatus("Завантаження...");
 
@@ -121,14 +122,13 @@ function setupFolderItem(entry, item, container, iconNode) {
 function setupFileItem(entry, item, container) {
   const ext = (entry.name.split(".").pop() || "").toLowerCase();
 
-  // 🔸 Одинарний клік → показати Smart Object-и (PSD/PSB)
+  // 🔸 Одинарний клік → показати Smart Object-и
   item.addEventListener("click", async (e) => {
     e.stopPropagation();
 
     if (["psd", "psb"].includes(ext)) {
-      if (item.dataset.loading === "1") return; // захист від повторного кліку
+      if (item.dataset.loading === "1") return;
 
-      // шукаємо контейнер для вкладених елементів
       let childrenContainer =
         item.nextSibling && item.nextSibling.classList.contains("tree-children")
           ? item.nextSibling
@@ -140,12 +140,11 @@ function setupFileItem(entry, item, container) {
         container.insertBefore(childrenContainer, item.nextSibling);
       }
 
-      // toggle відкриття/закриття
-      const isHidden = childrenContainer.style.display === "none" || !childrenContainer.style.display;
+      const isHidden =
+        childrenContainer.style.display === "none" || !childrenContainer.style.display;
       childrenContainer.style.display = isHidden ? "block" : "none";
       if (!isHidden) return;
 
-      // запускаємо аналіз
       if (!childrenContainer.dataset.loaded) {
         item.dataset.loading = "1";
         setStatus(`🧩 Аналіз ${entry.name}...`, "info", { persist: true });
@@ -167,7 +166,7 @@ function setupFileItem(entry, item, container) {
     }
   });
 
-  // 🔸 Подвійний клік → відкрити файл у Photoshop
+  // 🔸 Подвійний клік → відкрити файл
   item.addEventListener("dblclick", async (e) => {
     e.stopPropagation();
     await openFile(entry);
@@ -175,7 +174,7 @@ function setupFileItem(entry, item, container) {
 }
 
 // ===================================================
-// 🔹 Побудова дерева Smart Object-ів (вкладених)
+// 🔹 Побудова дерева Smart Object-ів
 // ===================================================
 function renderSmartTree(nodes, container) {
   if (!nodes || !nodes.length) {
@@ -215,3 +214,8 @@ function renderSmartTree(nodes, container) {
     }
   }
 }
+
+// ===================================================
+// 🔸 Експорт функцій
+// ===================================================
+module.exports = { initTreeUI, renderTree };

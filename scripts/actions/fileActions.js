@@ -1,19 +1,27 @@
 // ===================================================
-// 🔹 Робота з файлами: відкриття, аналіз Smart Object-ів
+// 🔹 Робота з файлами: відкриття, аналіз Smart Object-ів (CommonJS)
 // ===================================================
 
-import { setStatus } from "../ui/status.js";
-import { collectSmartObjectsRecursive } from "./smartParser.js";
+const { setStatus } = require("../ui/status.js");
+const { collectSmartObjectsRecursive } = require("./smartParser.js");
 
-const { app, core } = require("photoshop");
+const photoshop = require("photoshop");
+const app = photoshop.app;
+const core = photoshop.core;
 
-export async function openFile(fileEntry) {
+// ===================================================
+// 🔹 Відкрити файл у Photoshop
+// ===================================================
+async function openFile(fileEntry) {
   try {
     setStatus(`Відкриття: ${fileEntry.name}`, "info", { persist: true });
 
-    await core.executeAsModal(async () => {
-      await app.open(fileEntry);
-    }, { commandName: "Відкрити файл" });
+    await core.executeAsModal(
+      async () => {
+        await app.open(fileEntry);
+      },
+      { commandName: "Відкрити файл" }
+    );
 
     setStatus(`✅ Відкрито ${fileEntry.name}`, "success", { ttl: 1500 });
   } catch (err) {
@@ -22,24 +30,35 @@ export async function openFile(fileEntry) {
   }
 }
 
-export async function analyzeSmartObjectsFromFile(fileEntry) {
-  return await core.executeAsModal(async () => {
-    const previousDoc = app.activeDocument ?? null;
-    const docsBefore = app.documents.length;
+// ===================================================
+// 🔹 Аналіз Smart Object-ів у файлі
+// ===================================================
+async function analyzeSmartObjectsFromFile(fileEntry) {
+  return await core.executeAsModal(
+    async () => {
+      const previousDoc = app.activeDocument ?? null;
+      const docsBefore = app.documents.length;
 
-    await app.open(fileEntry);
-    const targetDoc = app.activeDocument;
+      await app.open(fileEntry);
+      const targetDoc = app.activeDocument;
 
-    const smartData = await collectSmartObjectsRecursive(targetDoc);
+      const smartData = await collectSmartObjectsRecursive(targetDoc);
 
-    if (app.documents.length > docsBefore) {
-      await targetDoc.closeWithoutSaving();
-    }
+      if (app.documents.length > docsBefore) {
+        await targetDoc.closeWithoutSaving();
+      }
 
-    if (previousDoc && previousDoc !== targetDoc) {
-      app.activeDocument = previousDoc;
-    }
+      if (previousDoc && previousDoc !== targetDoc) {
+        app.activeDocument = previousDoc;
+      }
 
-    return smartData;
-  }, { commandName: "Analyze Smart Objects" });
+      return smartData;
+    },
+    { commandName: "Analyze Smart Objects" }
+  );
 }
+
+// ===================================================
+// 🔸 Експорт функцій
+// ===================================================
+module.exports = { openFile, analyzeSmartObjectsFromFile };

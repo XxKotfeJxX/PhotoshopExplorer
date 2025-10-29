@@ -1,10 +1,12 @@
 // ===================================================
-// 🔹 Рекурсивний збір Smart Object-ів у документі
+// 🔹 Рекурсивний збір Smart Object-ів у документі (CommonJS)
 // ===================================================
 
-const { app, core } = require("photoshop");
+const photoshop = require("photoshop");
+const app = photoshop.app;
+const core = photoshop.core;
 
-export async function collectSmartObjectsRecursive(doc, depth = 0, maxDepth = 4) {
+async function collectSmartObjectsRecursive(doc, depth = 0, maxDepth = 4) {
   const result = [];
   if (depth > maxDepth) return result;
 
@@ -18,9 +20,12 @@ export async function collectSmartObjectsRecursive(doc, depth = 0, maxDepth = 4)
         info.path = layer.smartObject.link.path;
       } else {
         // 🔸 Якщо embedded — відкриваємо рекурсивно
-        await core.executeAsModal(async () => {
-          await layer.smartObject.open();
-        }, { commandName: "Open Smart Object" });
+        await core.executeAsModal(
+          async () => {
+            await layer.smartObject.open();
+          },
+          { commandName: "Open Smart Object" }
+        );
 
         const innerDoc = app.activeDocument;
         info.children = await collectSmartObjectsRecursive(innerDoc, depth + 1, maxDepth);
@@ -29,8 +34,13 @@ export async function collectSmartObjectsRecursive(doc, depth = 0, maxDepth = 4)
           await innerDoc.closeWithoutSaving();
         });
       }
+
       result.push(info);
     }
   }
+
   return result;
 }
+
+// 🔸 Експортуємо функцію
+module.exports = { collectSmartObjectsRecursive };

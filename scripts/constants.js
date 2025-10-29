@@ -1,14 +1,14 @@
 // ===================================================
-// 🔹 Константи для Photoshop Explorer
+// 🔹 Константи для Photoshop Explorer (CommonJS)
 // ===================================================
 
-export const SUPPORTED_EXTENSIONS = [
+const SUPPORTED_EXTENSIONS = [
   "psd", "psb", "png", "jpg", "jpeg", "tif", "tiff",
   "gif", "bmp", "tga", "svg", "pdf", "heic", "webp"
 ];
 
 // 🔸 Папка /icons має містити ці файли
-export const ICONS = {
+const ICONS = {
   folder: "icons/folder.png",
   folderOpen: "icons/folder-open.png",
   psd: "icons/file-psd.png",
@@ -18,3 +18,6 @@ export const ICONS = {
   generic: "icons/file-generic.png",
   smart: "icons/smart.png",
 };
+
+// 🔸 Експортуємо для інших модулів
+module.exports = { SUPPORTED_EXTENSIONS, ICONS };

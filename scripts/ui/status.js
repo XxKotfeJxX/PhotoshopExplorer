@@ -5,18 +5,19 @@
 let statusTimer = null;
 let statusBar = null;
 
-export function initStatusBar(element) {
+function initStatusBar(element) {
   statusBar = element;
 }
 
-export function setStatus(message, type = "info", options = {}) {
+function setStatus(message, type = "info", options = {}) {
   const { persist = false, ttl = 2000 } = options;
-  const prefix = {
-    info: "ℹ️",
-    success: "✅",
-    warn: "⚠️",
-    error: "❌",
-  }[type] || "ℹ️";
+  const prefix =
+    {
+      info: "ℹ️",
+      success: "✅",
+      warn: "⚠️",
+      error: "❌",
+    }[type] || "ℹ️";
 
   if (!statusBar) {
     console.warn("⚠️ statusBar не ініціалізовано!");
@@ -37,3 +38,6 @@ export function setStatus(message, type = "info", options = {}) {
     }, ttl);
   }
 }
+
+// 🔸 Експорт у форматі CommonJS
+module.exports = { initStatusBar, setStatus };

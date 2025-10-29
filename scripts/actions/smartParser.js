@@ -1,5 +1,5 @@
 // ===================================================
-// 🔹 Рекурсивний збір Smart Object-ів у документі (CommonJS, стабільна версія)
+// 🔹 Рекурсивний збір Smart Object-ів і груп (CommonJS, розширена версія)
 // ===================================================
 
 const photoshop = require("photoshop");
@@ -13,57 +13,66 @@ async function collectSmartObjectsRecursive(doc, depth = 0, maxDepth = 4) {
 
   const layers = Array.from(doc.layers || []);
   for (const layer of layers) {
-    if (layer.kind !== "smartObject") continue;
-
-    const info = { name: layer.name, type: "smart", children: [] };
-
     try {
-      const so = layer.smartObject;
-      if (!so) {
-        console.warn(`⚠️ Layer "${layer.name}" позначено як smartObject, але не має smartObject-дескриптора`);
-        result.push(info);
-        continue;
-      }
+      // ===================================================
+      // 🟢 1️⃣ Якщо це Smart Object
+      // ===================================================
+      if (layer.kind === "smartObject") {
+        const info = { name: layer.name, type: "smart", children: [] };
+        const so = layer.smartObject;
 
-      // 🔸 Якщо linked — просто додаємо шлях
-      if (so.link && so.link.path) {
-        info.path = so.link.path;
-      }
-      // 🔸 Якщо embedded — намагаємося відкрити рекурсивно
-      else if (typeof so.open === "function") {
-        await core.executeAsModal(
-          async () => {
-            try {
-              await so.open();
-            } catch (err) {
-              console.warn(`⚠️ Не вдалося відкрити Smart Object "${layer.name}":`, err);
-              throw err;
-            }
-          },
-          { commandName: "Open Smart Object" }
-        );
-
-        const innerDoc = app.activeDocument;
-        if (innerDoc && !innerDoc.closed) {
-          info.children = await collectSmartObjectsRecursive(innerDoc, depth + 1, maxDepth);
-
-          await core.executeAsModal(async () => {
-            try {
-              await innerDoc.closeWithoutSaving();
-            } catch (err) {
-              console.warn(`⚠️ Не вдалося закрити вкладений документ "${innerDoc.title || innerDoc.name}"`);
-            }
-          });
+        if (!so) {
+          console.warn(`⚠️ Smart "${layer.name}" не має smartObject-дескриптора`);
+          result.push(info);
+          continue;
         }
-      } else {
-        console.warn(`ℹ️ Smart Object "${layer.name}" не має методу open() — пропускаємо`);
+
+        // linked
+        if (so.link && so.link.path) {
+          info.path = so.link.path;
+        }
+        // embedded
+        else if (typeof so.open === "function") {
+          await core.executeAsModal(
+            async () => {
+              try {
+                await so.open();
+              } catch (err) {
+                console.warn(`⚠️ Не вдалося відкрити Smart Object "${layer.name}":`, err);
+              }
+            },
+            { commandName: "Open Smart Object" }
+          );
+
+          const innerDoc = app.activeDocument;
+          if (innerDoc && !innerDoc.closed) {
+            info.children = await collectSmartObjectsRecursive(innerDoc, depth + 1, maxDepth);
+            await core.executeAsModal(async () => {
+              try {
+                await innerDoc.closeWithoutSaving();
+              } catch (err) {
+                console.warn(`⚠️ Не вдалося закрити вкладений документ "${innerDoc.title || innerDoc.name}"`);
+              }
+            });
+          }
+        }
+
+        result.push(info);
       }
 
-      result.push(info);
+      // ===================================================
+      // 🟣 2️⃣ Якщо це Група (LayerSet)
+      // ===================================================
+      else if (layer.layers && layer.layers.length > 0) {
+        const info = { name: layer.name, type: "group", children: [] };
+        // рекурсивно обходимо групу
+        info.children = await collectSmartObjectsRecursive(layer, depth + 1, maxDepth);
+        result.push(info);
+      }
+
     } catch (err) {
       console.error(`❌ Помилка аналізу шару "${layer.name}":`, err);
-      // додаємо його у список, щоб дерево не рвалось
-      result.push({ name: layer.name, type: "smart", error: true });
+      result.push({ name: layer.name, type: "error", children: [] });
     }
   }
 

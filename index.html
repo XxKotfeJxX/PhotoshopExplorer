@@ -1,82 +1,32 @@
 <!DOCTYPE html>
 <html lang="uk">
-<head>
-  <meta charset="UTF-8" />
-  <title>Project Explorer</title>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Project Explorer</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="main.js"></script>
+  </head>
 
-  <!-- Spectrum UI автоматично вбудовується Photoshop -->
-  <link rel="stylesheet" href="styles.css" />
-  <script type="module" src="index.js"></script>
-</head>
-
-<body>
-  <div class="wrapper">
-    <sp-heading size="S">Project Explorer Panel</sp-heading>
-    <sp-divider></sp-divider>
-
-    <!-- 🔹 Кнопки управління -->
-    <div class="row">
-      <sp-action-button id="openDialogBtn">Відкрити у вікні</sp-action-button>
-      <sp-action-button id="openPanelBtn">Показати у панелі</sp-action-button>
-    </div>
-
-    <div class="infoRow">
-      <sp-icon name="ui:InfoSmall" size="s" class="icon"></sp-icon>
-      <sp-detail size="s" id="note">Переконайся, що локальний сервер працює.</sp-detail>
-    </div>
-
-    <!-- 🔹 Панель з WebView -->
-    <div id="webviewInPanel" style="display: none;">
-      <webview
-        id="panelWebview"
-        width="100%"
-        height="280px"
-        src="http://127.0.0.1:7724"
-        uxpAllowInspector="true"
-      ></webview>
-
-      <sp-heading size="XS" style="margin-top: 30px;">Дії з WebView</sp-heading>
+  <body>
+    <div class="wrapper">
+      <sp-heading size="S">Project Explorer</sp-heading>
       <sp-divider></sp-divider>
+
+      <!-- 🔹 Кнопки -->
       <div class="row">
-        <sp-action-button id="panelCreateTriangleBtn">Створити фігуру</sp-action-button>
-        <sp-action-button id="panelTransformTriangleBtn">Обертати</sp-action-button>
+        <sp-action-button id="openFolderBtn">📁 Вибрати теку</sp-action-button>
+        <sp-action-button id="refreshBtn">🔄 Оновити</sp-action-button>
       </div>
+
+      <!-- 🔹 Поточний шлях -->
+      <sp-detail size="s" id="currentPath">Теку не вибрано</sp-detail>
+
+      <!-- 🔹 Список файлів -->
+      <div id="fileList" class="file-list"></div>
+
+      <!-- 🔹 Статус -->
+      <sp-divider></sp-divider>
+      <sp-detail size="s" id="statusBar">Готово</sp-detail>
     </div>
-
-    <!-- 🔹 Результати -->
-    <div class="webview-result">
-      <sp-heading size="XS">Відповіді від WebView</sp-heading>
-      <sp-heading size="XXS">Повідомлення</sp-heading>
-      <sp-body id="logWebview"></sp-body>
-      <sp-heading size="XXS">Знімок</sp-heading>
-      <img id="snapshot" width="200" height="200" src="" />
-    </div>
-  </div>
-
-  <!-- 🔹 Діалог -->
-  <dialog id="dialog" width="600px">
-    <sp-heading size="M">WebView</sp-heading>
-    <sp-divider size="medium"></sp-divider>
-
-    <webview
-      id="dialogWebview"
-      style="border: 2px solid black; margin-top:10px;"
-      width="100%"
-      height="475px"
-      src="http://127.0.0.1:7724"
-      uxpAllowInspector="true"
-    ></webview>
-
-    <sp-divider size="medium"></sp-divider>
-
-    <sp-heading size="XS" style="margin-top: 10px;">Дії</sp-heading>
-    <div class="row">
-      <sp-action-button id="dialogCreateTriangleBtn">Створити</sp-action-button>
-      <sp-action-button id="dialogTransformTriangleBtn">Обертати</sp-action-button>
-    </div>
-
-    <sp-heading size="XS" style="margin-top: 10px;">Логи</sp-heading>
-    <textarea id="dialogLogs" width="100%" height="50px"></textarea>
-  </dialog>
-</body>
+  </body>
 </html>

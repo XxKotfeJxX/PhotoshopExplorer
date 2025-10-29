@@ -1,4 +1,8 @@
-import { localFileSystem, entrypoints } from "uxp";
+const uxp = require("uxp");
+const localFileSystem = uxp.storage.localFileSystem;
+const entrypoints = uxp.entrypoints;
+
+
 const openFolderBtn = document.getElementById("openFolderBtn");
 const refreshBtn = document.getElementById("refreshBtn");
 const fileTree = document.getElementById("fileTree");

@@ -25,27 +25,33 @@ body {
   margin-bottom: 10px;
 }
 
-.file-list {
+.file-tree {
   flex: 1 1 auto;
   background: #3a3a3a;
   border-radius: 6px;
   padding: 8px;
   overflow-y: auto;
   border: 1px solid #555;
+  font-size: 13px;
 }
 
-.file-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.tree-item {
+  margin-left: 16px;
   padding: 4px 8px;
-  margin: 2px 0;
   border-radius: 4px;
-  background: #2f2f2f;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   transition: background 0.15s;
 }
 
-.file-item:hover {
+.tree-item:hover {
   background: #4a4a4a;
+}
+
+.tree-children {
+  margin-left: 20px;
+  border-left: 1px solid #555;
+  padding-left: 8px;
 }

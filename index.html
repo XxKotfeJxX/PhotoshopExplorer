@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <title>Project Explorer</title>
     <link rel="stylesheet" href="styles.css" />
-    <script type="module" src="main.js"></script>
   </head>
 
   <body>
@@ -12,21 +11,19 @@
       <sp-heading size="S">Project Explorer</sp-heading>
       <sp-divider></sp-divider>
 
-      <!-- 🔹 Кнопки -->
       <div class="row">
         <sp-action-button id="openFolderBtn">📁 Вибрати теку</sp-action-button>
         <sp-action-button id="refreshBtn">🔄 Оновити</sp-action-button>
       </div>
 
-      <!-- 🔹 Поточний шлях -->
       <sp-detail size="s" id="currentPath">Теку не вибрано</sp-detail>
 
-      <!-- 🔹 Список файлів -->
-      <div id="fileList" class="file-list"></div>
+      <div id="fileTree" class="file-tree"></div>
 
-      <!-- 🔹 Статус -->
       <sp-divider></sp-divider>
       <sp-detail size="s" id="statusBar">Готово</sp-detail>
     </div>
+
+    <script type="module" src="script.js"></script>
   </body>
 </html>

@@ -1,0 +1,31 @@
+# ==============================
+# 🔹 Adobe Photoshop Plugin Project
+# ==============================
+
+# Build artifacts
+psdReader/__pycache__/
+psdReader/build/
+psdReader/dist/
+psdReader/*.spec
+
+# Compiled executables
+psdReader/*.exe
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs and temporary
+*.log
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Node/UXP build cache (якщо є)
+node_modules/
+npm-debug.log*

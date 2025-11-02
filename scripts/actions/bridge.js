@@ -1,62 +1,43 @@
 // ===================================================
-// 🔹 Місток між UXP і Python-делегатом (CommonJS)
+// 🔹 File-based bridge (через dataFolder, без сокетів)
 // ===================================================
 
-const uxp = require("uxp");
-const { shell } = uxp;
-const fs = uxp.storage.localFileSystem;
+const fs = require("uxp").storage.localFileSystem;
 
-/**
- * Викликає delegate.py і повертає JSON-результат з описом шарів.
- * @param {string} filePath - Повний шлях до PSD-файлу
- * @returns {Promise<object[]>}
- */
 async function analyzePSD(filePath) {
   try {
-    if (!filePath) throw new Error("File path is required.");
+    // 1️⃣ Отримуємо dataFolder — це єдина тека, куди плагін має права на запис
+    const bridgeFolder = await fs.getDataFolder();
 
-    // 🔹 Формуємо абсолютний шлях до delegate.py
-    const pluginFolder = await fs.getPluginFolder();
-    const pythonScriptEntry = await pluginFolder.getEntry("psdReader/delegate.py");
-    const pythonScript = pythonScriptEntry.nativePath;
+    // 🔹 Для дебагу — виводимо шлях до теки
+    console.log("📁 Data folder path:", bridgeFolder.nativePath);
 
-    // 🔹 Виклик Python (через shell)
-    const result = await shell.execute("python", [pythonScript, filePath], {
-      stdoutEncoding: "utf8",
-      stderrEncoding: "utf8",
-    });
+    // 2️⃣ Створюємо файл запиту
+    const reqFile = await bridgeFolder.createFile("request.json", { overwrite: true });
+    await reqFile.write(JSON.stringify({ cmd: "analyze", path: filePath }, null, 2));
 
-    const output = result.stdout.trim();
-    const errorOutput = result.stderr?.trim();
-
-    if (errorOutput && errorOutput.length > 0) {
-      console.warn("⚠️ delegate.py stderr:", errorOutput);
+    // 3️⃣ Чекаємо, поки Python запише result.json
+    let resultData = null;
+    for (let i = 0; i < 50; i++) {
+      try {
+        const resFile = await bridgeFolder.getEntry("result.json");
+        const content = await resFile.read();
+        resultData = JSON.parse(content);
+        break;
+      } catch {
+        await new Promise(r => setTimeout(r, 200));
+      }
     }
 
-    if (!output) {
-      throw new Error("Delegate returned empty output.");
-    }
+    // 4️⃣ Перевіряємо результат
+    if (!resultData) throw new Error("Timeout waiting for delegate response");
+    if (!resultData.ok) throw new Error(resultData.error || "Delegate error");
 
-    // 🔹 Пробуємо розпарсити JSON
-    let parsed;
-    try {
-      parsed = JSON.parse(output);
-    } catch (parseErr) {
-      console.error("❌ JSON parse error:", parseErr, "\nRaw output:", output);
-      throw new Error("Invalid JSON output from delegate.py");
-    }
-
-    if (parsed && parsed.error) {
-      console.error("❌ Delegate reported error:", parsed.error);
-      throw new Error(parsed.error);
-    }
-
-    return parsed;
+    return resultData.layers || [];
   } catch (err) {
-    console.error("❌ analyzePSD() error:", err);
+    console.error("❌ analyzePSD() file bridge error:", err);
     throw err;
   }
 }
 
-// 🔸 Експортуємо як CommonJS
 module.exports = { analyzePSD };

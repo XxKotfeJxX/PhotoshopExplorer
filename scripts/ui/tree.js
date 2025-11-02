@@ -1,22 +1,22 @@
 // ===================================================
-// 🔹 Побудова дерева файлів і Smart Object-ів + груп (оновлена з відкриттям Smart)
+// 🔹 Побудова дерева файлів і Smart Object-ів + груп (оновлено, підтримка Python-делегата)
 // ===================================================
 
-// Імпорти у стилі CommonJS
 const { SUPPORTED_EXTENSIONS, ICONS } = require("../constants.js");
 const { getFileIconForEntry, createIconImg } = require("./icons.js");
 const { setStatus } = require("./status.js");
 const {
   openFile,
-  analyzeSmartObjectsFromFile,
-  openSmartObjectById, // 🆕 додаємо цю функцію
+  analyzeFile,
+  openSmartObjectById,
+  openSmartObjectFromInfo,
 } = require("../actions/fileActions.js");
 
 let currentFolder = null;
 let localFileSystem = null;
 
 // ===================================================
-// 🔹 Ініціалізація UI (кнопки, слухачі подій)
+// 🔹 Ініціалізація UI (кнопки, події)
 // ===================================================
 function initTreeUI(uxp) {
   localFileSystem = uxp.storage.localFileSystem;
@@ -49,7 +49,7 @@ function initTreeUI(uxp) {
 }
 
 // ===================================================
-// 🔹 Основна функція побудови дерева
+// 🔹 Основна функція побудови дерева теки
 // ===================================================
 async function renderTree(folder, container) {
   container.innerHTML = "";
@@ -126,50 +126,49 @@ function setupFolderItem(entry, item, container, iconNode) {
 function setupFileItem(entry, item, container) {
   const ext = (entry.name.split(".").pop() || "").toLowerCase();
 
-  // 🔸 Одинарний клік → показати Smart Object-и
+  // 🔸 Одинарний клік → аналіз через Python (або JS fallback)
   item.addEventListener("click", async (e) => {
     e.stopPropagation();
 
-    if (["psd", "psb"].includes(ext)) {
-      if (item.dataset.loading === "1") return;
+    if (!["psd", "psb"].includes(ext)) return;
+    if (item.dataset.loading === "1") return;
 
-      let childrenContainer =
-        item.nextSibling && item.nextSibling.classList.contains("tree-children")
-          ? item.nextSibling
-          : null;
+    let childrenContainer =
+      item.nextSibling && item.nextSibling.classList.contains("tree-children")
+        ? item.nextSibling
+        : null;
 
-      if (!childrenContainer) {
-        childrenContainer = document.createElement("div");
-        childrenContainer.className = "tree-children";
-        container.insertBefore(childrenContainer, item.nextSibling);
-      }
+    if (!childrenContainer) {
+      childrenContainer = document.createElement("div");
+      childrenContainer.className = "tree-children";
+      container.insertBefore(childrenContainer, item.nextSibling);
+    }
 
-      const isHidden =
-        childrenContainer.style.display === "none" || !childrenContainer.style.display;
-      childrenContainer.style.display = isHidden ? "block" : "none";
-      if (!isHidden) return;
+    const isHidden =
+      childrenContainer.style.display === "none" || !childrenContainer.style.display;
+    childrenContainer.style.display = isHidden ? "block" : "none";
+    if (!isHidden) return;
 
-      if (!childrenContainer.dataset.loaded) {
-        item.dataset.loading = "1";
-        setStatus(`🧩 Аналіз ${entry.name}...`, "info", { persist: true });
+    if (!childrenContainer.dataset.loaded) {
+      item.dataset.loading = "1";
+      setStatus(`🧩 Аналіз ${entry.name}...`, "info", { persist: true });
 
-        try {
-          const smartTree = await analyzeSmartObjectsFromFile(entry);
-          childrenContainer.innerHTML = "";
-          renderSmartTree(smartTree, childrenContainer);
-          childrenContainer.dataset.loaded = "1";
-          setStatus(`✅ Зчитано об'єкти (${smartTree.length})`, "success", { ttl: 1800 });
-        } catch (err) {
-          console.error("Помилка аналізу:", err);
-          setStatus("❌ Помилка аналізу файлу", "error", { persist: true });
-        } finally {
-          item.dataset.loading = "";
-        }
+      try {
+        const smartTree = await analyzeFile(entry, "python");
+        childrenContainer.innerHTML = "";
+        renderSmartTree(smartTree, childrenContainer);
+        childrenContainer.dataset.loaded = "1";
+        setStatus(`✅ Зчитано об'єкти (${smartTree.length})`, "success", { ttl: 1800 });
+      } catch (err) {
+        console.error("Помилка аналізу:", err);
+        setStatus("❌ Помилка аналізу файлу", "error", { persist: true });
+      } finally {
+        item.dataset.loading = "";
       }
     }
   });
 
-  // 🔸 Подвійний клік → відкрити файл
+  // 🔸 Подвійний клік → відкрити файл у Photoshop
   item.addEventListener("dblclick", async (e) => {
     e.stopPropagation();
     await openFile(entry);
@@ -177,7 +176,7 @@ function setupFileItem(entry, item, container) {
 }
 
 // ===================================================
-// 🔹 Побудова дерева Smart Object-ів і груп + відкриття Smart Object-ів
+// 🔹 Побудова дерева Smart Object-ів і груп
 // ===================================================
 function renderSmartTree(nodes, container) {
   if (!nodes || !nodes.length) {
@@ -194,28 +193,38 @@ function renderSmartTree(nodes, container) {
     item.className = "tree-item";
 
     let icon;
-    if (node.type === "group") {
+    if (node.is_group || node.type === "group") {
       icon = createIconImg(ICONS.folder, "📁");
-    } else if (node.type === "smart") {
+    } else if (node.is_smart_object || node.type === "smart") {
       icon = createIconImg(ICONS.smart, "🧩");
     } else {
       icon = document.createTextNode("❓");
     }
 
     const name = document.createElement("span");
-    name.textContent = node.name;
+    name.textContent = node.name || "(Без назви)";
     item.append(icon, name);
     container.appendChild(item);
 
-    // 🧩 Подвійний клік — відкрити Smart Object
-    if (node.type === "smart" && node.id) {
+    // 🧩 Подвійний клік — відкриття Smart Object
+    if (node.is_smart_object || node.type === "smart") {
       item.addEventListener("dblclick", async (e) => {
         e.stopPropagation();
-        await openSmartObjectById(node.id);
+
+        // Якщо є шлях (linked/temp) — відкриваємо з делегата
+        if (node.linked_path || node.temp_extracted_path) {
+          await openSmartObjectFromInfo(node);
+        }
+        // Якщо є ID — відкриваємо через Photoshop API
+        else if (node.id) {
+          await openSmartObjectById(node.id);
+        } else {
+          setStatus("⚠️ Немає даних для відкриття Smart Object-а", "warn", { ttl: 1500 });
+        }
       });
     }
 
-    // якщо є вкладення
+    // 🔁 Якщо є вкладені елементи
     if (node.children && node.children.length) {
       const childrenContainer = document.createElement("div");
       childrenContainer.className = "tree-children";
@@ -228,8 +237,7 @@ function renderSmartTree(nodes, container) {
         expanded = !expanded;
         childrenContainer.style.display = expanded ? "block" : "none";
 
-        // міняємо іконку групи при розгортанні
-        if (node.type === "group" && icon.tagName === "IMG") {
+        if ((node.is_group || node.type === "group") && icon.tagName === "IMG") {
           icon.src = expanded ? ICONS.folderOpen : ICONS.folder;
         }
       });

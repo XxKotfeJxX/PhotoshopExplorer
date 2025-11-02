@@ -1,12 +1,16 @@
 // ===================================================
-// 🔹 Побудова дерева файлів і Smart Object-ів + груп
+// 🔹 Побудова дерева файлів і Smart Object-ів + груп (оновлена з відкриттям Smart)
 // ===================================================
 
 // Імпорти у стилі CommonJS
 const { SUPPORTED_EXTENSIONS, ICONS } = require("../constants.js");
 const { getFileIconForEntry, createIconImg } = require("./icons.js");
 const { setStatus } = require("./status.js");
-const { openFile, analyzeSmartObjectsFromFile } = require("../actions/fileActions.js");
+const {
+  openFile,
+  analyzeSmartObjectsFromFile,
+  openSmartObjectById, // 🆕 додаємо цю функцію
+} = require("../actions/fileActions.js");
 
 let currentFolder = null;
 let localFileSystem = null;
@@ -26,16 +30,16 @@ function initTreeUI(uxp) {
     try {
       currentFolder = await localFileSystem.getFolder({ allowSystem: true });
       if (!currentFolder) {
-        setStatus(" Теку не вибрано", "warn");
+        setStatus("🚫 Теку не вибрано", "warn");
         return;
       }
 
       currentPath.textContent = currentFolder.nativePath || "(невідомо)";
       await renderTree(currentFolder, fileTree);
-      setStatus(" Список оновлено", "success");
+      setStatus("✅ Список оновлено", "success");
     } catch (err) {
       console.error("Помилка при виборі теки:", err);
-      setStatus(" Помилка при виборі теки", "error", { persist: true });
+      setStatus("❌ Помилка при виборі теки", "error", { persist: true });
     }
   });
 
@@ -77,10 +81,10 @@ async function renderTree(folder, container) {
       }
     }
 
-    setStatus(` Завантажено ${entries.length} елементів`, "success", { ttl: 1500 });
+    setStatus(`✅ Завантажено ${entries.length} елементів`, "success", { ttl: 1500 });
   } catch (err) {
     console.error("Помилка при побудові дерева:", err);
-    setStatus(" Не вдалося прочитати теку", "error", { persist: true });
+    setStatus("❌ Не вдалося прочитати теку", "error", { persist: true });
   }
 }
 
@@ -117,7 +121,7 @@ function setupFolderItem(entry, item, container, iconNode) {
 }
 
 // ===================================================
-// 🔹 Обробник для файлів
+// 🔹 Обробник для файлів (PSD/PSB)
 // ===================================================
 function setupFileItem(entry, item, container) {
   const ext = (entry.name.split(".").pop() || "").toLowerCase();
@@ -154,11 +158,10 @@ function setupFileItem(entry, item, container) {
           childrenContainer.innerHTML = "";
           renderSmartTree(smartTree, childrenContainer);
           childrenContainer.dataset.loaded = "1";
-
-          setStatus(` Зчитано об'єкти (${smartTree.length})`, "success", { ttl: 1800 });
+          setStatus(`✅ Зчитано об'єкти (${smartTree.length})`, "success", { ttl: 1800 });
         } catch (err) {
           console.error("Помилка аналізу:", err);
-          setStatus(" Помилка аналізу файлу", "error", { persist: true });
+          setStatus("❌ Помилка аналізу файлу", "error", { persist: true });
         } finally {
           item.dataset.loading = "";
         }
@@ -174,7 +177,7 @@ function setupFileItem(entry, item, container) {
 }
 
 // ===================================================
-// 🔹 Побудова дерева Smart Object-ів і груп
+// 🔹 Побудова дерева Smart Object-ів і груп + відкриття Smart Object-ів
 // ===================================================
 function renderSmartTree(nodes, container) {
   if (!nodes || !nodes.length) {
@@ -192,7 +195,7 @@ function renderSmartTree(nodes, container) {
 
     let icon;
     if (node.type === "group") {
-      icon = createIconImg(ICONS.folder, "📁"); // закрита група
+      icon = createIconImg(ICONS.folder, "📁");
     } else if (node.type === "smart") {
       icon = createIconImg(ICONS.smart, "🧩");
     } else {
@@ -203,6 +206,14 @@ function renderSmartTree(nodes, container) {
     name.textContent = node.name;
     item.append(icon, name);
     container.appendChild(item);
+
+    // 🧩 Подвійний клік — відкрити Smart Object
+    if (node.type === "smart" && node.id) {
+      item.addEventListener("dblclick", async (e) => {
+        e.stopPropagation();
+        await openSmartObjectById(node.id);
+      });
+    }
 
     // якщо є вкладення
     if (node.children && node.children.length) {

@@ -1,11 +1,11 @@
 {
   "id": "PhotoshopExplorer",
   "name": "Project Explorer",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "manifestVersion": 5,
   "main": "index.html",
   "host": [
-    { "app": "PS", "minVersion": "26.11.1" }
+    { "app": "PS", "minVersion": "20.0.0" }
   ],
 
   "permissions": {

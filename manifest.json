@@ -5,7 +5,7 @@
   "manifestVersion": 5,
   "main": "index.html",
   "host": [
-    { "app": "PS", "minVersion": "20.0.0" }
+    { "app": "PS", "minVersion": "22.0.0" }
   ],
 
   "permissions": {

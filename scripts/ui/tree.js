@@ -43,9 +43,28 @@ function initTreeUI(uxp) {
     }
   });
 
-  refreshBtn.addEventListener("click", () => {
-    if (currentFolder) renderTree(currentFolder, fileTree);
-  });
+  refreshBtn.addEventListener("click", async () => {
+  try {
+    if (!currentFolder) {
+      setStatus("🚫 Теку не вибрано", "warn");
+      return;
+    }
+
+    if (!currentFolder.isFolder) {
+      setStatus("⚠️ Поточний елемент не є текою", "warn");
+      return;
+    }
+
+    setStatus("🔄 Оновлення...", "info");
+    const fileTree = document.getElementById("fileTree");
+    await renderTree(currentFolder, fileTree);
+    setStatus("✅ Оновлено", "success", { ttl: 1500 });
+  } catch (err) {
+    console.error("Помилка оновлення:", err);
+    setStatus("❌ Не вдалося оновити", "error", { persist: true });
+  }
+});
+
 }
 
 // ===================================================
@@ -198,7 +217,7 @@ function renderSmartTree(nodes, container) {
     } else if (node.is_smart_object || node.type === "smart") {
       icon = createIconImg(ICONS.smart, "🧩");
     } else {
-      icon = document.createTextNode("❓");
+      icon = document.createTextNode("📄");
     }
 
     const name = document.createElement("span");

@@ -1,65 +1,148 @@
 html, body {
   height: 100%;
-  overflow: hidden; /* не даємо html скролитись — лише панелі */
+  overflow: hidden;
 }
 
 body {
   margin: 0;
-  background-color: #2e2e2e;
-  color: #fff;
-  font-family: "Source Sans Pro", sans-serif;
+  background-color: #1f1f1f;
+  color: #e0e0e0;
+  font-family: "Source Sans Pro", "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 .wrapper {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 16px;
-  overflow: hidden; /* тут вимикаємо скрол для всієї панелі */
+  padding: 12px;
+  overflow: hidden;
 }
 
+/* Заголовок */
+sp-heading {
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
 
 .row {
   display: flex;
   gap: 8px;
-  margin-bottom: 10px;
+  margin: 10px 0 6px;
+}
+
+sp-action-button {
+  --spectrum-alias-background-color-default: #2f2f2f;
+  --spectrum-alias-border-color-default: #444;
+  --spectrum-alias-background-color-hover: #3f3f3f;
+  --spectrum-alias-text-color-default: #e4e4e4;
 }
 
 #currentPath {
-  color: #ccc;
-  margin-bottom: 10px;
+  color: #9a9a9a;
+  font-size: 12px;
+  margin-bottom: 6px;
+  border-left: 3px solid #4fa3ff;
+  padding-left: 6px;
+  line-height: 1.3;
 }
 
+#statusBar {
+  color: #bcbcbc;
+  font-size: 12px;
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid #3a3a3a;
+}
+
+/* ==============================
+   🔹 Дерево файлів
+   ============================== */
 .file-tree {
   flex: 1 1 auto;
-  background: #3a3a3a;
-  border-radius: 6px;
-  padding: 8px;
-  overflow-y: auto; /* ✅ прокрутка саме тут */
-  border: 1px solid #555;
+  background: #252525;
+  border-radius: 8px;
+  padding: 6px 8px;
+  overflow-y: auto;
+  border: 1px solid #3b3b3b;
   font-size: 13px;
-  max-height: calc(100% - 120px); /* щоб не виходило за межі */
+  scrollbar-width: thin;
+  scrollbar-color: #555 #252525;
 }
 
+.file-tree::-webkit-scrollbar { width: 6px; }
+.file-tree::-webkit-scrollbar-thumb {
+  background-color: #555;
+  border-radius: 3px;
+}
+
+/* Елементи */
 .tree-item {
-  margin-left: 16px;
-  padding: 4px 8px;
+  margin-left: 8px;
+  padding: 3px 6px;
   border-radius: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 6px;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  position: relative;
 }
-
-.tree-item img { width:16px; height:16px; object-fit:contain; }
 
 .tree-item:hover {
-  background: #4a4a4a;
+  background: #3a3a3a;
+  box-shadow: inset 0 0 0 1px #4fa3ff40;
 }
 
+.tree-item.selected {
+  background: linear-gradient(90deg, #3a7bff40, #3a7bff10);
+  color: #4fa3ff;
+  box-shadow: inset 0 0 0 1px #4fa3ff60;
+}
+
+.tree-item img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  opacity: 0.9;
+}
+
+.tree-item span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Вкладені елементи */
 .tree-children {
-  margin-left: 20px;
-  border-left: 1px solid #555;
-  padding-left: 8px;
+  margin-left: 16px;
+  border-left: 1px solid #444;
+  padding-left: 6px;
+}
+
+/* Папки, файли, PSD, архіви */
+.tree-item.folder span {
+  color: #ffd54f;
+  font-weight: 500;
+}
+
+.tree-item.psd span {
+  color: #7cc8ff;
+  font-weight: 500;
+}
+
+.tree-item.archive span {
+  color: #aaa;
+  font-weight: 400;
+}
+
+/* Анімація появи */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.tree-item {
+  animation: fadeIn 0.15s ease;
 }

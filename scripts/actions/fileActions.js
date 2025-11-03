@@ -176,20 +176,45 @@ async function analyzeFile(fileEntry, mode = "python") {
   }
 }
 
+
 // ===================================================
-// 🔹 Відкрити Smart Object із даних делегата (linked або temp)
+// 🔹 Відкрити Smart Object із даних делегата (фінальна версія)
 // ===================================================
 async function openSmartObjectFromInfo(info) {
   try {
-    const path = info.linked_path || info.temp_extracted_path;
-    if (!path) {
-      console.warn("⚠️ Smart Object не має файлу для відкриття");
-      setStatus("⚠️ Немає шляху для Smart Object-а", "warning", { ttl: 2000 });
+    const absPath = info.linked_path || info.temp_extracted_path;
+    if (!absPath) {
+      console.warn("⚠️ Smart Object не має файлу для відкриття", info);
+      setStatus("⚠️ Немає шляху для Smart Object-а", "warning", { ttl: 3000 });
       return;
     }
 
+    const fs = require("uxp").storage.localFileSystem;
+    const dataFolder = await fs.getDataFolder();
+
+    // 🔹 Отримуємо шлях усередині dataFolder (від "Extracted/...")
+    const root = dataFolder.nativePath.replace(/\\/g, "/");
+    const abs = absPath.replace(/\\/g, "/");
+    const rel = abs.slice(root.length + 1);
+    const parts = rel.split("/").filter(Boolean);
+
+    let cursor = dataFolder;
+    let entry = null;
+    for (const part of parts) {
+      entry = await cursor.getEntry(part);
+      if (entry.isFolder) cursor = entry;
+    }
+
+    if (!entry || entry.isFolder) {
+      console.error("❌ Не знайдено файл у dataFolder:", rel);
+      setStatus("❌ Файл не знайдено у dataFolder", "error", { persist: true });
+      return;
+    }
+
+    console.log("🧩 Opening Smart Object from:", entry.nativePath);
+
     await core.executeAsModal(async () => {
-      await app.open(path);
+      await app.open(entry);
     }, { commandName: "Open Smart Object (Delegate)" });
 
     setStatus(`🧩 Відкрито Smart Object: ${info.name}`, "success", { ttl: 1500 });
@@ -198,6 +223,8 @@ async function openSmartObjectFromInfo(info) {
     setStatus("❌ Помилка відкриття Smart Object-а", "error", { persist: true });
   }
 }
+
+
 
 // ===================================================
 // 🔹 Відкрити Smart Object за ID у поточному документі (через Photoshop API)

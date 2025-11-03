@@ -1,13 +1,12 @@
-import os, json, time
-from psd_tools import PSDImage
+import os, json, time, subprocess, sys
 
-# 🔹 Шлях до тек, які реально використовує Photoshop UXP (dataFolder)
+# 🔹 Шлях до теки, яку реально використовує Photoshop UXP (dataFolder)
 DATA_DIR = r"C:\Users\andru\AppData\Roaming\Adobe\UXP\PluginsStorage\PHSP\26\Developer\PhotoshopExplorer\PluginData"
-
 REQ_PATH = os.path.join(DATA_DIR, "request.json")
 RES_PATH = os.path.join(DATA_DIR, "result.json")
+DELEGATE_PATH = os.path.join(os.path.dirname(__file__), "delegate.py")
 
-print(f"Bridge file watcher started at {DATA_DIR}")
+print(f"📡 Bridge file watcher started at {DATA_DIR}")
 
 while True:
     if os.path.exists(REQ_PATH):
@@ -16,26 +15,42 @@ while True:
                 msg = json.load(f)
 
             if msg.get("cmd") == "analyze" and msg.get("path"):
-                psd = PSDImage.open(msg["path"])
-                layers = []
-                for l in psd:
-                    layers.append({
-                        "name": l.name,
-                        "is_group": l.is_group(),
-                        "visible": bool(l.visible),
-                        "is_smart_object": hasattr(l, "smart_object") and l.smart_object is not None
-                    })
-                result = {"ok": True, "layers": layers}
+                psd_path = msg["path"]
+                print(f"🔍 Running delegate.py for {psd_path}")
+                try:
+                    out = subprocess.check_output(
+                        [sys.executable, DELEGATE_PATH, psd_path],
+                        stderr=subprocess.STDOUT,
+                        shell=False,
+                    )
+                    layers = json.loads(out.decode("utf-8", errors="ignore"))
+                    result = {
+                        "ok": True,
+                        "layers": layers,
+                        "generated_at": time.time(),
+                        "source": psd_path,
+                    }
+                except subprocess.CalledProcessError as e:
+                    result = {
+                        "ok": False,
+                        "error": f"delegate.py failed: {e.output.decode(errors='ignore')}",
+                    }
+                except Exception as e:
+                    result = {"ok": False, "error": f"delegate.py error: {e}"}
             else:
-                result = {"ok": False, "error": "Invalid command"}
+                result = {"ok": False, "error": "Invalid command or path"}
+
         except Exception as e:
             result = {"ok": False, "error": str(e)}
 
+        # ✅ Атомарний запис результату
         try:
-            with open(RES_PATH, "w", encoding="utf-8") as f:
+            tmp_path = RES_PATH + ".tmp"
+            with open(tmp_path, "w", encoding="utf-8") as f:
                 json.dump(result, f, ensure_ascii=False, indent=2)
+            os.replace(tmp_path, RES_PATH)
             os.remove(REQ_PATH)
-            print("✅ Processed request.json -> result.json")
+            print("✅ Processed request.json → result.json")
         except Exception as e:
             print(f"⚠️ Error writing result.json: {e}")
 
